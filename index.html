@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ISOCLIME</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --clr-bg: #0a0a0f;
+      --clr-surface: #111118;
+      --clr-accent: #00ffe0;
+      --clr-accent2: #ff00c8;
+      --clr-text: #d4f7f0;
+      --clr-muted: #7a9e99;
+      --clr-warn: #ffcc00;
+      --clr-border: rgba(0, 255, 224, 0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--clr-bg);
+      color: var(--clr-text);
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Scan-lines overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.04) 2px,
+        rgba(0,0,0,0.04) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ── Pages ─────────────────────────────────────── */
+    .page { display: none; min-height: 100vh; }
+    .page.active { display: block; }
+
+    .page-container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem;
+    }
+
+    /* ── Glitch title ──────────────────────────────── */
+    .glitch {
+      font-family: 'Orbitron', monospace;
+      font-size: 2.8rem;
+      font-weight: 900;
+      color: var(--clr-accent);
+      position: relative;
+      display: inline-block;
+      text-shadow: 0 0 24px rgba(0,255,224,0.45);
+    }
+    .glitch::before,
+    .glitch::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      overflow: hidden;
+    }
+    .glitch::before {
+      color: var(--clr-accent2);
+      animation: glitch1 3s infinite;
+      clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+    }
+    .glitch::after {
+      color: var(--clr-accent);
+      animation: glitch2 3s infinite;
+      clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+    }
+    @keyframes glitch1 {
+      0%, 88%, 100% { transform: translate(0); }
+      90% { transform: translate(-3px, 1px); }
+      94% { transform: translate(3px, -1px); }
+    }
+    @keyframes glitch2 {
+      0%, 88%, 100% { transform: translate(0); }
+      90% { transform: translate(3px, 1px); }
+      94% { transform: translate(-3px, -1px); }
+    }
+
+    /* ── Buttons ───────────────────────────────────── */
+    .btn {
+      background: transparent;
+      border: 1px solid var(--clr-accent);
+      color: var(--clr-accent);
+      font-family: 'Orbitron', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      padding: 0.75rem 2rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+    .btn:hover {
+      background: rgba(0,255,224,0.08);
+      box-shadow: 0 0 18px rgba(0,255,224,0.25);
+    }
+    .btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .btn-primary {
+      background: var(--clr-accent);
+      color: var(--clr-bg);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--clr-accent);
+      box-shadow: 0 0 30px rgba(0,255,224,0.5);
+    }
+
+    /* ── Cards ─────────────────────────────────────── */
+    .card {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .result-card {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      border-left: 3px solid var(--clr-muted);
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .result-card.priority-high {
+      border-left-color: var(--clr-accent2);
+      background: rgba(255,0,200,0.04);
+    }
+    .result-card.priority-med {
+      border-left-color: var(--clr-warn);
+      background: rgba(255,204,0,0.04);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in {
+      animation: fadeIn 0.4s ease forwards;
+      opacity: 0;
+    }
+
+    /* ── Progress steps ────────────────────────────── */
+    .steps-bar {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 2rem;
+    }
+    .step-dot {
+      height: 3px;
+      flex: 1;
+      background: var(--clr-border);
+      transition: background 0.3s;
+    }
+    .step-dot.active {
+      background: var(--clr-accent);
+      box-shadow: 0 0 8px rgba(0,255,224,0.45);
+    }
+    .step-dot.completed {
+      background: rgba(0,255,224,0.35);
+    }
+
+    /* ── Score ring ────────────────────────────────── */
+    .score-ring-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 1.5rem 0;
+      position: relative;
+    }
+    .score-ring-wrapper svg {
+      transform: rotate(-90deg);
+    }
+    .score-bg-circle {
+      fill: none;
+      stroke: var(--clr-border);
+      stroke-width: 6;
+    }
+    #score-circle {
+      fill: none;
+      stroke: var(--clr-accent);
+      stroke-width: 6;
+      stroke-dasharray: 239;
+      stroke-dashoffset: 239;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1.2s ease, stroke 0.5s ease;
+    }
+    .score-number-overlay {
+      position: absolute;
+      text-align: center;
+    }
+
+    /* ── Map ───────────────────────────────────────── */
+    .map-mock {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      height: 230px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .map-mock::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(0deg,   transparent, transparent 29px, rgba(0,255,224,0.04) 29px, rgba(0,255,224,0.04) 30px),
+        repeating-linear-gradient(90deg,  transparent, transparent 29px, rgba(0,255,224,0.04) 29px, rgba(0,255,224,0.04) 30px);
+    }
+    .map-zones {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 1rem;
+    }
+    .map-zone-btn {
+      background: rgba(0,255,224,0.04);
+      border: 1px solid rgba(0,255,224,0.2);
+      color: var(--clr-muted);
+      font-family: 'VT323', monospace;
+      font-size: 1rem;
+      padding: 0.3rem 0.7rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.08em;
+    }
+    .map-zone-btn:hover,
+    .map-zone-btn.selected {
+      background: rgba(0,255,224,0.14);
+      border-color: var(--clr-accent);
+      color: var(--clr-accent);
+      box-shadow: 0 0 10px rgba(0,255,224,0.2);
+    }
+    #map-instruction {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--clr-muted);
+      font-size: 0.78rem;
+      position: absolute;
+      bottom: 12px;
+      left: 0; right: 0;
+      text-align: center;
+    }
+    #map-marker {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: var(--clr-accent2);
+      font-size: 1.8rem;
+      text-shadow: 0 0 12px rgba(255,0,200,0.6);
+    }
+    #map-selected-zone {
+      display: none;
+      background: rgba(0,255,224,0.08);
+      border: 1px solid var(--clr-accent);
+      color: var(--clr-accent);
+      font-family: 'Orbitron', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      padding: 0.4rem 0.9rem;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Text input ────────────────────────────────── */
+    .text-input {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      color: var(--clr-text);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.88rem;
+      padding: 0.75rem 1rem;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .text-input:focus {
+      border-color: var(--clr-accent);
+      box-shadow: 0 0 10px rgba(0,255,224,0.18);
+    }
+    .text-input::placeholder { color: var(--clr-muted); }
+
+    /* ── Answer options ─────────────────────────────── */
+    .options-grid { display: grid; gap: 0.5rem; }
+
+    .option-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      transition: all 0.18s;
+      user-select: none;
+    }
+    .option-item:hover {
+      border-color: var(--clr-accent);
+      background: rgba(0,255,224,0.04);
+    }
+    .option-item.selected {
+      border-color: var(--clr-accent);
+      background: rgba(0,255,224,0.08);
+    }
+    .option-item input[type="radio"],
+    .option-item input[type="checkbox"] {
+      accent-color: var(--clr-accent);
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    /* ── Sensor grid ───────────────────────────────── */
+    #sensor-data-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    /* ── Misc ──────────────────────────────────────── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--clr-border);
+      margin: 1.5rem 0;
+    }
+    .label {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      color: var(--clr-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .section-heading {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: var(--clr-muted);
+      border-bottom: 1px solid var(--clr-border);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .q-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1.5rem;
+      gap: 1rem;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--clr-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--clr-border); }
+  </style>
+</head>
+<body>
+
+<!-- ========================================================
+     HOME PAGE
+     ======================================================== -->
+<div id="page-home" class="page active">
+  <div class="page-container">
+    <div style="text-align:center;padding:3rem 1rem 2rem;">
+      <h1 class="glitch" data-text="ISOCLIME">ISOCLIME</h1>
+      <p id="tagline-text" style="font-family:'VT323',monospace;font-size:1.4rem;color:var(--clr-muted);letter-spacing:0.28em;margin:0.6rem 0 2rem;">DETECT. DEFLECT. PROTECT.</p>
+      <p style="color:var(--clr-muted);font-size:0.8rem;max-width:420px;margin:0 auto 2.5rem;line-height:1.8;">
+        AI-powered microclimate analysis for your neighborhood. Identify heat stress, humidity risk, and get actionable solutions.
+      </p>
+      <button class="btn btn-primary" id="cta-btn" onclick="showPage('page-map')">▶ SEARCH YOUR ZONE</button>
+    </div>
+
+    <hr class="divider" />
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;text-align:center;padding:1rem 0 2rem;">
+      <div>
+        <div style="font-family:'Orbitron',monospace;font-size:1.5rem;font-weight:900;color:var(--clr-accent);">47</div>
+        <div style="font-size:0.62rem;color:var(--clr-muted);letter-spacing:0.1em;margin-top:4px;">ZONES MAPPED</div>
+      </div>
+      <div>
+        <div style="font-family:'Orbitron',monospace;font-size:1.5rem;font-weight:900;color:var(--clr-accent2);">1,240</div>
+        <div style="font-size:0.62rem;color:var(--clr-muted);letter-spacing:0.1em;margin-top:4px;">HOUSEHOLDS</div>
+      </div>
+      <div>
+        <div style="font-family:'Orbitron',monospace;font-size:1.5rem;font-weight:900;color:var(--clr-warn);">89%</div>
+        <div style="font-size:0.62rem;color:var(--clr-muted);letter-spacing:0.1em;margin-top:4px;">SATISFACTION</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     MAP / ZONE SELECTION PAGE
+     ======================================================== -->
+<div id="page-map" class="page">
+  <div class="page-container">
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
+      <button class="btn" onclick="goToHome()" style="padding:0.5rem 1rem;font-size:0.7rem;">◁ BACK</button>
+      <h2 style="font-family:'Orbitron',monospace;font-size:0.9rem;font-weight:700;color:var(--clr-text);">SELECT YOUR ZONE</h2>
+    </div>
+
+    <div class="label">SEARCH BY NEIGHBORHOOD</div>
+    <input type="text" id="neighborhood-input" class="text-input"
+           placeholder="e.g. Colonia Kennedy, El Manchén…"
+           style="margin-bottom:1rem;"
+           oninput="filterZones(this.value)" />
+
+    <div class="label">OR SELECT ON MAP</div>
+    <div class="map-mock">
+      <div class="map-zones" id="map-zones"></div>
+      <div id="map-marker">◈</div>
+      <div id="map-instruction">
+        <i data-lucide="map-pin" style="width:22px;height:22px;"></i>
+        <span>Tap a zone to select</span>
+      </div>
+    </div>
+
+    <div id="map-selected-zone">
+      ZONE SELECTED: <span id="zone-name-display"></span>
+    </div>
+
+    <button class="btn btn-primary" id="start-survey-btn"
+            onclick="startSurvey()" disabled style="width:100%;">
+      ▶ START CLIMATE ANALYSIS
+    </button>
+  </div>
+</div>
+
+<!-- ========================================================
+     QUESTIONS PAGE
+     ======================================================== -->
+<div id="page-questions" class="page">
+  <div class="page-container">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <button class="btn"
+              onclick="currentQuestionIndex > 0 ? prevQuestion() : showPage('page-map')"
+              style="padding:0.5rem 1rem;font-size:0.7rem;">◁ BACK</button>
+      <span id="q-counter"
+            style="font-family:'VT323',monospace;font-size:1rem;color:var(--clr-muted);">1 / 9</span>
+    </div>
+
+    <div class="steps-bar" id="steps-bar"></div>
+
+    <div id="question-area"></div>
+
+    <div class="q-nav">
+      <span id="q-zone-label" style="font-size:0.68rem;color:var(--clr-muted);"></span>
+      <button class="btn btn-primary" id="q-next-btn"
+              onclick="nextQuestion()" disabled>NEXT ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     RESULTS PAGE
+     ======================================================== -->
+<div id="page-results" class="page">
+  <div class="page-container">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <button class="btn" onclick="restartApp()" style="padding:0.5rem 1rem;font-size:0.7rem;">◁ NEW SCAN</button>
+      <span id="result-zone-label"
+            style="font-family:'Orbitron',monospace;font-size:0.6rem;font-weight:700;color:var(--clr-muted);">
+        ZONA ANALIZADA: —
+      </span>
+    </div>
+
+    <!-- Score ring -->
+    <div class="score-ring-wrapper">
+      <svg width="90" height="90" viewBox="0 0 90 90">
+        <circle class="score-bg-circle" cx="45" cy="45" r="38" />
+        <circle id="score-circle" cx="45" cy="45" r="38" />
+      </svg>
+      <div class="score-number-overlay">
+        <div id="score-number"
+             style="font-family:'Orbitron',monospace;font-size:1.5rem;font-weight:900;color:var(--clr-accent);">0</div>
+        <div style="font-size:0.52rem;color:var(--clr-muted);letter-spacing:0.12em;">RISK</div>
+      </div>
+    </div>
+
+    <!-- Summary card -->
+    <div class="card" style="text-align:center;margin-bottom:1.5rem;">
+      <div id="result-summary-title"
+           style="font-family:'Orbitron',monospace;font-size:0.85rem;font-weight:700;color:var(--clr-text);margin-bottom:0.5rem;"></div>
+      <div id="result-summary-text"
+           style="font-size:0.78rem;color:var(--clr-muted);line-height:1.7;"></div>
+    </div>
+
+    <!-- Sensor data -->
+    <div class="section-heading">◈ ZONE SENSOR DATA</div>
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div id="sensor-data-grid"></div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="section-heading">▲ RECOMMENDATIONS</div>
+    <div id="recommendations-container"></div>
+
+    <hr class="divider" />
+    <div style="text-align:center;padding:0.5rem 0 1.5rem;">
+      <button class="btn" onclick="restartApp()" style="width:100%;">◁ SCAN ANOTHER ZONE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     JAVASCRIPT
+     ======================================================== -->
+<script>
+
+// ================== ELEMENT SDK STUB ==================
+window.elementSdk = {
+  _config: {},
+  _onConfigChange: null,
+  init: function({ defaultConfig, onConfigChange, mapToCapabilities, mapToEditPanelValues }) {
+    this._config = { ...defaultConfig };
+    this._onConfigChange = onConfigChange;
+    onConfigChange(this._config);
+  },
+  setConfig: function(updates) {
+    Object.assign(this._config, updates);
+    if (this._onConfigChange) this._onConfigChange(this._config);
+  }
+};
+
+// ================== STATE ==================
+let currentZone = '';
+let answers = {};
+let currentQuestionIndex = 0;
+
+// ================== QUESTIONS ==================
+const questions = [
+  {
+    id: 'issues',
+    title: 'CLIMATE ISSUES DETECTED',
+    subtitle: 'Select all that apply to your home or zone.',
+    type: 'multi',
+    options: [
+      { value: 'Mold or fungus growth',          label: 'Mold or fungus growth' },
+      { value: 'Excessive humidity / dampness',  label: 'Excessive humidity / dampness' },
+      { value: 'Extreme heat indoors',           label: 'Extreme heat indoors' },
+      { value: 'Flooding or standing water',     label: 'Flooding or standing water' },
+      { value: 'Poor air quality / dust',        label: 'Poor air quality / dust' },
+    ]
+  },
+  {
+    id: 'urgency',
+    title: 'URGENCY LEVEL',
+    subtitle: 'How urgent is the situation?',
+    type: 'single',
+    options: [
+      { value: 'Critical — affecting health now',        label: 'Critical — affecting health now' },
+      { value: 'High — worsening over time',             label: 'High — worsening over time' },
+      { value: 'Medium — manageable but concerning',     label: 'Medium — manageable but concerning' },
+      { value: 'Low — preventive interest only',         label: 'Low — preventive interest only' },
+    ]
+  },
+  {
+    id: 'building_type',
+    title: 'BUILDING TYPE',
+    subtitle: 'What type of structure is your home?',
+    type: 'single',
+    options: [
+      { value: 'Concrete block',       label: 'Concrete block' },
+      { value: 'Metal / zinc structure', label: 'Metal / zinc structure' },
+      { value: 'Wood frame',           label: 'Wood frame' },
+      { value: 'Mixed materials',      label: 'Mixed materials' },
+    ]
+  },
+  {
+    id: 'roof',
+    title: 'ROOF TYPE',
+    subtitle: 'What material is your roof?',
+    type: 'single',
+    options: [
+      { value: 'zinc / corrugated metal', label: 'Zinc / corrugated metal' },
+      { value: 'Concrete slab',           label: 'Concrete slab' },
+      { value: 'Tile / terracotta',       label: 'Tile / terracotta' },
+      { value: 'Visible cracks or damage', label: 'Visible cracks or damage' },
+    ]
+  },
+  {
+    id: 'sunlight',
+    title: 'SUNLIGHT EXPOSURE',
+    subtitle: 'How much direct sun does your home receive?',
+    type: 'single',
+    options: [
+      { value: 'Full sun 6+ hours/day', label: 'Full sun 6+ hours/day' },
+      { value: 'Mornings only',         label: 'Mornings only' },
+      { value: 'Afternoons only',       label: 'Afternoons only' },
+      { value: 'Mostly shaded',         label: 'Mostly shaded' },
+    ]
+  },
+  {
+    id: 'electricity',
+    title: 'ENERGY CONSUMPTION',
+    subtitle: 'Has your electricity bill changed recently?',
+    type: 'single',
+    options: [
+      { value: 'Increased significantly — over 30%', label: 'Increased significantly — over 30%' },
+      { value: 'Slightly increased',                 label: 'Slightly increased' },
+      { value: 'About the same',                     label: 'About the same' },
+      { value: 'Decreased',                          label: 'Decreased' },
+    ]
+  },
+  {
+    id: 'tried',
+    title: 'SOLUTIONS ATTEMPTED',
+    subtitle: 'What have you already tried? (Select all that apply)',
+    type: 'multi',
+    options: [
+      { value: 'Ventilation fans',       label: 'Ventilation fans' },
+      { value: 'Air conditioning',       label: 'Air conditioning' },
+      { value: 'Dehumidifier',           label: 'Dehumidifier' },
+      { value: 'Window tinting / film',  label: 'Window tinting / film' },
+      { value: 'Nothing yet',            label: 'Nothing yet' },
+    ]
+  },
+  {
+    id: 'household',
+    title: 'HOUSEHOLD MEMBERS',
+    subtitle: 'Who lives in your home? (Select all that apply)',
+    type: 'multi',
+    options: [
+      { value: 'Young children',                      label: 'Young children (under 10)' },
+      { value: 'Elderly',                             label: 'Elderly (65+)' },
+      { value: 'People with respiratory conditions',  label: 'People with respiratory conditions' },
+      { value: 'Healthy adults only',                 label: 'Healthy adults only' },
+    ]
+  },
+  {
+    id: 'budget',
+    title: 'AVAILABLE BUDGET',
+    subtitle: 'What is your budget for improvements?',
+    type: 'single',
+    options: [
+      { value: 'Under L. 500',      label: 'Under L. 500' },
+      { value: 'L. 500 – 2,000',    label: 'L. 500 – 2,000' },
+      { value: 'L. 2,000 – 8,000',  label: 'L. 2,000 – 8,000' },
+      { value: 'Over L. 8,000',     label: 'Over L. 8,000' },
+    ]
+  },
+];
+
+// ================== ZONES ==================
+const zones = [
+  'Col. Kennedy', 'El Manchén', 'Suyapa', 'Loarque', 'La Granja',
+  'Villanueva', 'El Carrizal', 'Altos de Toncontín', 'Comayagüela', 'La Joya',
+];
+
+// ================== PAGE MANAGEMENT ==================
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const page = document.getElementById(id);
+  if (page) { page.classList.add('active'); window.scrollTo(0, 0); }
+}
+
+function goToHome() {
+  showPage('page-home');
+}
+
+// ================== MAP / ZONE SELECTION ==================
+function initMapZones() {
+  const container = document.getElementById('map-zones');
+  container.innerHTML = '';
+  zones.forEach(zone => {
+    const btn = document.createElement('button');
+    btn.className = 'map-zone-btn';
+    btn.textContent = zone;
+    btn.onclick = () => selectZone(zone);
+    container.appendChild(btn);
+  });
+}
+
+function selectZone(zone) {
+  currentZone = zone;
+  document.querySelectorAll('.map-zone-btn').forEach(b => {
+    b.classList.toggle('selected', b.textContent === zone);
+  });
+  document.getElementById('map-marker').style.display = 'block';
+  document.getElementById('map-selected-zone').style.display = 'block';
+  document.getElementById('zone-name-display').textContent = zone;
+  document.getElementById('map-instruction').style.display = 'none';
+  document.getElementById('neighborhood-input').value = zone;
+  document.getElementById('start-survey-btn').disabled = false;
+}
+
+function filterZones(val) {
+  const v = val.trim().toLowerCase();
+  document.querySelectorAll('.map-zone-btn').forEach(b => {
+    b.style.display = (!v || b.textContent.toLowerCase().includes(v)) ? '' : 'none';
+  });
+}
+
+function startSurvey() {
+  if (!currentZone) return;
+  answers = {};
+  currentQuestionIndex = 0;
+  renderSteps();
+  renderQuestion();
+  showPage('page-questions');
+}
+
+// ================== QUESTION RENDERING ==================
+function renderSteps() {
+  const bar = document.getElementById('steps-bar');
+  bar.innerHTML = '';
+  questions.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'step-dot';
+    if (i < currentQuestionIndex) dot.classList.add('completed');
+    if (i === currentQuestionIndex) dot.classList.add('active');
+    bar.appendChild(dot);
+  });
+  document.getElementById('q-counter').textContent = (currentQuestionIndex + 1) + ' / ' + questions.length;
+  document.getElementById('q-zone-label').textContent = '◈ ' + currentZone;
+}
+
+function renderQuestion() {
+  const q = questions[currentQuestionIndex];
+  const area = document.getElementById('question-area');
+
+  area.innerHTML = `
+    <div style="margin-bottom:1.5rem;">
+      <div style="font-family:'Orbitron',monospace;font-size:0.62rem;font-weight:700;color:var(--clr-muted);letter-spacing:0.2em;margin-bottom:0.4rem;">
+        QUESTION ${currentQuestionIndex + 1}
+      </div>
+      <h2 style="font-family:'Orbitron',monospace;font-size:1rem;font-weight:700;color:var(--clr-text);margin-bottom:0.4rem;">${q.title}</h2>
+      <p style="font-size:0.78rem;color:var(--clr-muted);">${q.subtitle}</p>
+    </div>
+    <div class="options-grid" id="options-grid-${q.id}"></div>
+  `;
+
+  const grid = document.getElementById('options-grid-' + q.id);
+  const currentVal = answers[q.id] || (q.type === 'multi' ? [] : null);
+
+  q.options.forEach(opt => {
+    const item = document.createElement('label');
+    item.className = 'option-item';
+
+    const isSelected = q.type === 'multi'
+      ? (Array.isArray(currentVal) && currentVal.includes(opt.value))
+      : currentVal === opt.value;
+
+    if (isSelected) item.classList.add('selected');
+
+    item.innerHTML = `
+      <input type="${q.type === 'multi' ? 'checkbox' : 'radio'}"
+             name="q-${q.id}"
+             value="${opt.value}"
+             ${isSelected ? 'checked' : ''} />
+      <span style="font-size:0.82rem;color:var(--clr-text);">${opt.label}</span>
+    `;
+
+    const input = item.querySelector('input');
+    input.addEventListener('change', () => handleAnswer(q, opt.value, input.checked));
+
+    grid.appendChild(item);
+  });
+
+  updateNextButton(q);
+}
+
+function handleAnswer(q, value, checked) {
+  if (q.type === 'multi') {
+    if (!Array.isArray(answers[q.id])) answers[q.id] = [];
+    if (checked) {
+      if (!answers[q.id].includes(value)) answers[q.id].push(value);
+    } else {
+      answers[q.id] = answers[q.id].filter(v => v !== value);
+    }
+  } else {
+    answers[q.id] = value;
+  }
+
+  // Update visual selection state
+  document.querySelectorAll(`input[name="q-${q.id}"]`).forEach(inp => {
+    inp.closest('.option-item').classList.toggle('selected', inp.checked);
+  });
+
+  updateNextButton(q);
+}
+
+function updateNextButton(q) {
+  const hasAnswer = answers[q.id] && (Array.isArray(answers[q.id]) ? answers[q.id].length > 0 : true);
+  document.getElementById('q-next-btn').disabled = !hasAnswer;
+}
+
+function nextQuestion() {
+  if (currentQuestionIndex < questions.length - 1) {
+    currentQuestionIndex++;
+    renderSteps();
+    renderQuestion();
+  } else {
+    generateResults();
+  }
+}
+
+function prevQuestion() {
+  if (currentQuestionIndex > 0) {
+    currentQuestionIndex--;
+    renderSteps();
+    renderQuestion();
+  }
+}
+
+// ================== RESULTS ==================
+function generateResults() {
+  showPage('page-results');
+  document.getElementById('result-zone-label').textContent = 'ZONA ANALIZADA: ' + currentZone;
+
+  // Score calculation based on answers
+  let riskScore = 0;
+  if (answers.issues) {
+    const issues = Array.isArray(answers.issues) ? answers.issues : [answers.issues];
+    if (issues.includes('Mold or fungus growth')) riskScore += 25;
+    if (issues.includes('Excessive humidity / dampness')) riskScore += 20;
+    if (issues.includes('Extreme heat indoors')) riskScore += 15;
+  }
+  if (answers.urgency) {
+    if (answers.urgency.includes('Critical')) riskScore += 20;
+    else if (answers.urgency.includes('High')) riskScore += 12;
+    else if (answers.urgency.includes('Medium')) riskScore += 6;
+  }
+  if (answers.electricity && answers.electricity.includes('significantly')) riskScore += 10;
+  if (answers.roof && (answers.roof.includes('cracks') || answers.roof.includes('zinc'))) riskScore += 10;
+  riskScore = Math.min(riskScore, 99);
+
+  // Animate score ring
+  setTimeout(() => {
+    const circumference = 239;
+    const offset = circumference - (riskScore / 100) * circumference;
+    const circle = document.getElementById('score-circle');
+    circle.style.strokeDashoffset = offset;
+    if (riskScore >= 60) circle.style.stroke = '#ff00c8';
+    else if (riskScore >= 35) circle.style.stroke = '#ffcc00';
+    else circle.style.stroke = '#00ffe0';
+  }, 300);
+
+  document.getElementById('score-number').textContent = riskScore;
+
+  // Summary
+  let summaryTitle, summaryText;
+  if (riskScore >= 60) {
+    summaryTitle = '⚠ HIGH CLIMATE RISK DETECTED';
+    summaryText = 'Your zone shows significant climate stress indicators. Immediate action is recommended to prevent further health and structural damage. Our AI has identified critical intervention points.';
+  } else if (riskScore >= 30) {
+    summaryTitle = '◈ MODERATE CLIMATE RISK';
+    summaryText = 'Your zone shows moderate climate challenges. Targeted improvements can significantly improve comfort and reduce energy costs. Review the recommendations below.';
+  } else {
+    summaryTitle = '✓ LOW CLIMATE RISK';
+    summaryText = 'Your zone appears to be managing climate conditions well. The following recommendations will help you maintain this and optimize further for efficiency and comfort.';
+  }
+  document.getElementById('result-summary-title').textContent = summaryTitle;
+  document.getElementById('result-summary-text').textContent = summaryText;
+
+  // Build recommendations
+  const recs = buildRecommendations();
+  const container = document.getElementById('recommendations-container');
+  container.innerHTML = '';
+  recs.forEach((rec, i) => {
+    const card = document.createElement('div');
+    card.className = 'result-card fade-in ' + rec.priority;
+    card.style.animationDelay = (i * 0.1) + 's';
+    card.innerHTML = `
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="flex-shrink:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;">
+          <span style="font-family:'VT323',monospace;font-size:1.2rem;color:${rec.priority === 'priority-high' ? 'var(--clr-accent2)' : rec.priority === 'priority-med' ? 'var(--clr-warn)' : 'var(--clr-accent)'};">${rec.icon}</span>
+        </div>
+        <div>
+          <p style="font-family:'Orbitron',monospace;font-size:0.75rem;font-weight:700;color:var(--clr-text);margin-bottom:4px;">${rec.title}</p>
+          <p style="font-size:0.78rem;color:var(--clr-muted);line-height:1.6;">${rec.desc}</p>
+          ${rec.cost ? `<p style="font-family:'VT323',monospace;font-size:0.9rem;color:var(--clr-accent);margin-top:4px;">COSTO ESTIMADO: ${rec.cost}</p>` : ''}
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  // Sensor data
+  const sensorGrid = document.getElementById('sensor-data-grid');
+  sensorGrid.innerHTML = '';
+  const sensorData = [
+    { label: 'TEMPERATURA', value: (32 + Math.random() * 5).toFixed(1) + '°C', color: 'var(--clr-accent2)' },
+    { label: 'HUMEDAD',     value: (75 + Math.random() * 15).toFixed(0) + '%', color: 'var(--clr-warn)' },
+    { label: 'ÍNDICE UV',   value: (8  + Math.random() * 3).toFixed(1),        color: 'var(--clr-accent)' },
+    { label: 'CALIDAD AIRE', value: 'MODERADA',                                 color: 'var(--clr-warn)' },
+  ];
+  sensorData.forEach(s => {
+    const div = document.createElement('div');
+    div.innerHTML = `
+      <div style="font-size:0.6rem;color:var(--clr-muted);letter-spacing:0.1em;margin-bottom:4px;">${s.label}</div>
+      <div style="font-family:'Orbitron',monospace;font-size:1.1rem;font-weight:700;color:${s.color};">${s.value}</div>
+    `;
+    sensorGrid.appendChild(div);
+  });
+
+  lucide.createIcons();
+}
+
+function buildRecommendations() {
+  const recs = [];
+  const issues = answers.issues || [];
+  const budget = answers.budget || '';
+  const building = answers.building_type || '';
+  const sunlight = answers.sunlight || '';
+  const tried = answers.tried || [];
+
+  if (issues.includes('Mold or fungus growth') || issues.includes('Excessive humidity / dampness')) {
+    recs.push({
+      priority: 'priority-high',
+      icon: '◈',
+      title: 'ANTI-MOLD TREATMENT — IMMEDIATE',
+      desc: 'Apply antifungal paint or treatment to affected walls. Improve drainage and ensure no water leaks. Borax-based solutions are cost-effective and proven in tropical climates.',
+      cost: 'L. 300–800'
+    });
+  }
+
+  if (issues.includes('Extreme heat indoors') || sunlight.includes('6+') || sunlight.includes('Mornings')) {
+    recs.push({
+      priority: 'priority-high',
+      icon: '◑',
+      title: 'REFLECTIVE ROOF COATING',
+      desc: 'Apply white or aluminum-pigmented paint to your roof. This alone can reduce indoor temperature by 5–8°C in direct sun exposure zones. Works especially well on zinc roofs.',
+      cost: 'L. 1,200–3,500'
+    });
+  }
+
+  if (building.includes('Metal') || building.includes('zinc')) {
+    recs.push({
+      priority: 'priority-high',
+      icon: '▲',
+      title: 'THERMAL BARRIER INSTALLATION',
+      desc: 'Install a radiant barrier or foam insulation underneath your metal roof. This prevents heat transfer and dramatically cuts cooling costs. Critical for zinc/metal structure homes.',
+      cost: 'L. 2,500–6,000'
+    });
+  }
+
+  if (!tried.includes('Ventilation fans')) {
+    recs.push({
+      priority: 'priority-med',
+      icon: '◎',
+      title: 'CROSS-VENTILATION STRATEGY',
+      desc: 'Position fans to create cross-ventilation — inlet on shaded side, outlet on sun side. Use ceiling fans counterclockwise in summer. This can reduce felt temperature by 4°C with no added electricity.',
+      cost: 'L. 500–1,500'
+    });
+  }
+
+  if (answers.electricity && answers.electricity.includes('significantly')) {
+    recs.push({
+      priority: 'priority-med',
+      icon: '⚡',
+      title: 'ENERGY AUDIT — AC OPTIMIZATION',
+      desc: 'Set AC to 24–26°C and use timer mode. Clean filters monthly. If unit is over 8 years old, consider replacement — newer models use 40% less energy. Check for gaps around windows and doors.',
+      cost: 'L. 0–200 (maintenance)'
+    });
+  }
+
+  if (answers.household && (answers.household.includes('Young children') || answers.household.includes('Elderly'))) {
+    recs.push({
+      priority: 'priority-high',
+      icon: '⊕',
+      title: 'VULNERABLE RESIDENT PROTOCOL',
+      desc: 'Prioritize air quality for children and elderly — consider HEPA air purifiers for sleeping areas. Ensure hydration reminders are in place during peak heat hours (11am–4pm). Create a cool rest zone in the home.',
+      cost: 'L. 800–2,000'
+    });
+  }
+
+  recs.push({
+    priority: '',
+    icon: '◷',
+    title: 'ISOCLIME SENSOR ALERT SUBSCRIPTION',
+    desc: 'Subscribe to receive SMS or WhatsApp alerts when your zone sensors detect dangerous humidity or heat spikes. Early warnings help you act before conditions worsen.',
+    cost: 'Gratis — Servicio ISOCLIME'
+  });
+
+  recs.push({
+    priority: '',
+    icon: '◈',
+    title: 'COMMUNITY SHADE INFRASTRUCTURE',
+    desc: 'Connect with your neighborhood association to plant shade trees along streets. Cities with 30%+ canopy cover average 3°C cooler than open zones. ISOCLIME can map optimal planting zones.',
+    cost: 'L. 0 (programa comunitario)'
+  });
+
+  return recs.slice(0, 5);
+}
+
+function restartApp() {
+  currentZone = '';
+  answers = {};
+  currentQuestionIndex = 0;
+  document.getElementById('neighborhood-input').value = '';
+  document.getElementById('map-marker').style.display = 'none';
+  document.getElementById('map-selected-zone').style.display = 'none';
+  document.getElementById('map-instruction').style.display = 'flex';
+  goToHome();
+}
+
+// ================== ELEMENT SDK ==================
+const defaultConfig = {
+  app_title: 'ISOCLIME',
+  tagline: 'DETECT. DEFLECT. PROTECT.',
+  cta_button: 'SEARCH YOUR ZONE',
+  background_color: '#0a0a0f',
+  surface_color: '#111118',
+  accent_color: '#00ffe0',
+  accent2_color: '#ff00c8',
+  text_color: '#d4f7f0',
+};
+
+window.elementSdk.init({
+  defaultConfig,
+  onConfigChange: async (config) => {
+    // App title
+    const titleEls = document.querySelectorAll('.glitch');
+    titleEls.forEach(el => {
+      el.textContent = config.app_title || defaultConfig.app_title;
+      el.setAttribute('data-text', config.app_title || defaultConfig.app_title);
+    });
+
+    // Tagline
+    const taglineEl = document.getElementById('tagline-text');
+    if (taglineEl) taglineEl.textContent = config.tagline || defaultConfig.tagline;
+
+    // CTA button
+    const ctaBtn = document.getElementById('cta-btn');
+    if (ctaBtn) ctaBtn.textContent = '▶ ' + (config.cta_button || defaultConfig.cta_button);
+
+    // Colors via CSS variables
+    const root = document.documentElement;
+    root.style.setProperty('--clr-bg',      config.background_color || defaultConfig.background_color);
+    root.style.setProperty('--clr-surface',  config.surface_color    || defaultConfig.surface_color);
+    root.style.setProperty('--clr-accent',   config.accent_color     || defaultConfig.accent_color);
+    root.style.setProperty('--clr-accent2',  config.accent2_color    || defaultConfig.accent2_color);
+    root.style.setProperty('--clr-text',     config.text_color       || defaultConfig.text_color);
+  },
+  mapToCapabilities: (config) => ({
+    recolorables: [
+      {
+        get: () => config.background_color || defaultConfig.background_color,
+        set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); }
+      },
+      {
+        get: () => config.surface_color || defaultConfig.surface_color,
+        set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); }
+      },
+      {
+        get: () => config.text_color || defaultConfig.text_color,
+        set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); }
+      },
+      {
+        get: () => config.accent_color || defaultConfig.accent_color,
+        set: (v) => { config.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); }
+      },
+      {
+        get: () => config.accent2_color || defaultConfig.accent2_color,
+        set: (v) => { config.accent2_color = v; window.elementSdk.setConfig({ accent2_color: v }); }
+      },
+    ],
+    borderables: [],
+    fontEditable: undefined,
+    fontSizeable: undefined,
+  }),
+  mapToEditPanelValues: (config) => new Map([
+    ['app_title', config.app_title || defaultConfig.app_title],
+    ['tagline',   config.tagline   || defaultConfig.tagline],
+    ['cta_button', config.cta_button || defaultConfig.cta_button],
+  ])
+});
+
+// ================== INIT ==================
+initMapZones();
+lucide.createIcons();
+
+</script>
+</body>
+</html>
