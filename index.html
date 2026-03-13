@@ -137,6 +137,17 @@
       background: var(--clr-accent);
       box-shadow: 0 0 30px rgba(14, 122, 80, 0.45);
     }
+    .btn-partner {
+      border-color: var(--clr-accent2);
+      color: var(--clr-accent2);
+      font-size: 0.62rem;
+      padding: 0.4rem 0.9rem;
+      letter-spacing: 0.13em;
+    }
+    .btn-partner:hover {
+      background: rgba(26, 110, 184, 0.09);
+      box-shadow: 0 0 18px rgba(26, 110, 184, 0.22);
+    }
 
     /* ── Cards ─────────────────────────────────────── */
     .card {
@@ -679,6 +690,9 @@
     </div>
   </div>
   <div class="page-container">
+    <div style="display:flex;justify-content:flex-end;padding:0.6rem 0 0;">
+      <button class="btn btn-partner" onclick="showPage('page-partner')">◈ PARTNER WITH ISOCLIME</button>
+    </div>
     <div style="text-align:center;padding:3rem 1rem 2rem;">
       <img src="https://github.com/user-attachments/assets/62902e3a-7c39-4a35-8b6a-1526678150e1"
            id="isoclime-logo"
@@ -711,6 +725,115 @@
         <div style="font-family:'Orbitron',monospace;font-size:1.5rem;font-weight:900;color:var(--clr-warn);" id="satisfaction-count">0%</div>
         <div style="font-size:0.62rem;color:var(--clr-muted);letter-spacing:0.1em;margin-top:4px;">SATISFACTION</div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     PARTNER PAGE
+     ======================================================== -->
+<div id="page-partner" class="page">
+  <div class="metal-layer" aria-hidden="true">
+    <div class="deco deco-a" style="top:5%;right:3%;">
+      <svg viewBox="0 0 60 60" width="68" height="68">
+        <defs>
+          <linearGradient id="g-pt-ast" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#1a6eb8"/><stop offset="30%" stop-color="#a0cfef"/>
+            <stop offset="65%" stop-color="#4a9fd4"/><stop offset="100%" stop-color="#0d4a80"/>
+          </linearGradient>
+        </defs>
+        <g stroke="url(#g-pt-ast)" stroke-width="5" stroke-linecap="round" transform="translate(30,30)">
+          <line x1="0" y1="-22" x2="0" y2="22"/>
+          <line x1="-22" y1="0" x2="22" y2="0"/>
+          <line x1="-15.6" y1="-15.6" x2="15.6" y2="15.6"/>
+          <line x1="15.6" y1="-15.6" x2="-15.6" y2="15.6"/>
+        </g>
+      </svg>
+    </div>
+    <div class="deco deco-c" style="bottom:10%;left:2%;">
+      <svg viewBox="0 0 60 60" width="52" height="52">
+        <defs>
+          <radialGradient id="g-pt-sph" cx="21" cy="17" r="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#a0d8f7"/>
+            <stop offset="60%" stop-color="#1a6eb8"/>
+            <stop offset="100%" stop-color="#0d2f5a"/>
+          </radialGradient>
+        </defs>
+        <circle cx="30" cy="30" r="27" fill="url(#g-pt-sph)" opacity="0.7"/>
+      </svg>
+    </div>
+  </div>
+  <div class="page-container">
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
+      <button class="btn" onclick="goToHome()" style="padding:0.5rem 1rem;font-size:0.7rem;">◁ BACK</button>
+      <h2 style="font-family:'Orbitron',monospace;font-size:0.9rem;font-weight:700;color:var(--clr-text);">PARTNER WITH ISOCLIME</h2>
+    </div>
+
+    <div class="learn-card learn-accent2">
+      <h3>🌍 ENTERPRISE DATA ACCESS</h3>
+      <p>Research institutions, government agencies, and real estate developers can request detailed microclimate data, zone-specific reports, and collaboration opportunities through IsoClime. This information can support research, urban planning, construction decisions, and climate-responsive development.</p>
+    </div>
+
+    <div class="learn-card">
+      <h3>🔬 RESEARCH INSTITUTIONS</h3>
+      <p>Access raw microclimate datasets, longitudinal temperature and humidity records, and zone-level correlations. Ideal for academic research on urban heat, public health, and climate adaptation. Data exports available in JSON, CSV, and GeoJSON formats.</p>
+      <div class="learn-stat-grid">
+        <div class="learn-stat">
+          <span class="learn-stat-value">📊</span>
+          <span class="learn-stat-label">RAW DATASETS</span>
+        </div>
+        <div class="learn-stat">
+          <span class="learn-stat-value">📍</span>
+          <span class="learn-stat-label">ZONE-LEVEL RECORDS</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="learn-card learn-accent2">
+      <h3>🏛 MUNICIPAL GOVERNMENTS</h3>
+      <p>Commission zone-specific climate reports for urban planning, zoning decisions, and public infrastructure. IsoClime provides actionable insights on heat-risk corridors, green infrastructure placement, and emergency response prioritization.</p>
+      <div class="learn-stat-grid">
+        <div class="learn-stat">
+          <span class="learn-stat-value">🗺</span>
+          <span class="learn-stat-label">URBAN PLANNING REPORTS</span>
+        </div>
+        <div class="learn-stat">
+          <span class="learn-stat-value">🌿</span>
+          <span class="learn-stat-label">GREEN INFRA GUIDANCE</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="learn-card learn-warn">
+      <h3>🏗 REAL ESTATE DEVELOPERS</h3>
+      <p>Obtain pre-development microclimate assessments for construction sites and residential developments. Understand how local heat, humidity, and airflow patterns will affect occupant comfort, energy efficiency, and building design requirements.</p>
+      <div class="learn-stat-grid">
+        <div class="learn-stat">
+          <span class="learn-stat-value">🏠</span>
+          <span class="learn-stat-label">SITE ASSESSMENTS</span>
+        </div>
+        <div class="learn-stat">
+          <span class="learn-stat-value">⚡</span>
+          <span class="learn-stat-label">ENERGY EFFICIENCY DATA</span>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider" style="margin:1.5rem 0;" />
+
+    <p style="color:var(--clr-muted);font-size:0.8rem;text-align:center;margin-bottom:1.5rem;line-height:1.8;">
+      Ready to collaborate? Contact us to discuss a data contract or partnership agreement tailored to your organization's needs.
+    </p>
+
+    <div class="cta-row">
+      <button class="btn btn-primary"
+              onclick="window.location.href='mailto:data@isoclime.io?subject=Data%20Request%20%E2%80%94%20IsoClime&body=Hello%2C%0A%0AI%20am%20interested%20in%20requesting%20detailed%20microclimate%20data%20from%20IsoClime.%0A%0AOrganization%3A%0AUse%20case%3A%0AData%20format%20required%3A%0A'">
+        ◈ REQUEST DETAILED DATA
+      </button>
+      <button class="btn"
+              onclick="window.location.href='mailto:contact@isoclime.io?subject=Partnership%20Inquiry%20%E2%80%94%20IsoClime&body=Hello%2C%0A%0AI%20would%20like%20to%20learn%20more%20about%20partnering%20with%20IsoClime.%0A%0AOrganization%3A%0AType%20(Research%20%2F%20Government%20%2F%20Real%20Estate)%3A%0AMessage%3A%0A'">
+        ✉ CONTACT ISOCLIME
+      </button>
     </div>
   </div>
 </div>
