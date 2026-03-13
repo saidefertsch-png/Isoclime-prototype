@@ -342,6 +342,49 @@
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: var(--clr-bg); }
     ::-webkit-scrollbar-thumb { background: var(--clr-border); }
+
+    /* ── Cloud background (home page only) ─────────── */
+    #page-home { position: relative; overflow: hidden; }
+    #page-home .page-container { position: relative; z-index: 1; }
+    #cloud-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .cloud {
+      position: absolute;
+      background: rgba(200, 235, 255, 0.07);
+      border-radius: 60px;
+      filter: blur(8px);
+    }
+    .cloud::before,
+    .cloud::after {
+      content: '';
+      position: absolute;
+      background: rgba(200, 235, 255, 0.07);
+      border-radius: 50%;
+    }
+    .cloud::before {
+      width: 55%; height: 145%;
+      top: -48%; left: 14%;
+    }
+    .cloud::after {
+      width: 42%; height: 125%;
+      top: -32%; right: 13%;
+    }
+    @keyframes cloud-drift {
+      from { transform: translateX(-420px); opacity: 0; }
+      8%   { opacity: 1; }
+      92%  { opacity: 1; }
+      to   { transform: translateX(calc(100vw + 420px)); opacity: 0; }
+    }
+    .cloud-1 { width: 280px; height: 72px;  top:  6%; animation: cloud-drift 62s linear  0s  infinite; }
+    .cloud-2 { width: 200px; height: 54px;  top: 21%; animation: cloud-drift 78s linear 14s  infinite; }
+    .cloud-3 { width: 360px; height: 88px;  top: 39%; animation: cloud-drift 50s linear  8s  infinite; }
+    .cloud-4 { width: 155px; height: 44px;  top: 59%; animation: cloud-drift 70s linear 30s  infinite; }
+    .cloud-5 { width: 245px; height: 66px;  top: 73%; animation: cloud-drift 57s linear 22s  infinite; }
+    .cloud-6 { width: 215px; height: 58px;  top: 13%; animation: cloud-drift 88s linear 44s  infinite; }
   </style>
 </head>
 <body>
@@ -350,6 +393,14 @@
      HOME PAGE
      ======================================================== -->
 <div id="page-home" class="page active">
+  <div id="cloud-layer" aria-hidden="true">
+    <div class="cloud cloud-1"></div>
+    <div class="cloud cloud-2"></div>
+    <div class="cloud cloud-3"></div>
+    <div class="cloud cloud-4"></div>
+    <div class="cloud cloud-5"></div>
+    <div class="cloud cloud-6"></div>
+  </div>
   <div class="page-container">
     <div style="text-align:center;padding:3rem 1rem 2rem;">
       <img src="https://github.com/user-attachments/assets/435e8f39-b05d-4469-8326-59f239e2f8c7"
