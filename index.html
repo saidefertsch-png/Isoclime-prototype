@@ -769,72 +769,98 @@
       <h2 style="font-family:'Orbitron',monospace;font-size:0.9rem;font-weight:700;color:var(--clr-text);">PARTNER WITH ISOCLIME</h2>
     </div>
 
+    <!-- Project summary -->
     <div class="learn-card learn-accent2">
+      <h3>🌡 ABOUT ISOCLIME</h3>
+      <p>IsoClime monitors temperature and humidity across urban microclimates to help cities understand environmental conditions and improve urban planning and public health.</p>
+    </div>
+
+    <!-- Overview -->
+    <div class="learn-card">
       <h3>🌍 ENTERPRISE DATA ACCESS</h3>
       <p>Research institutions, government agencies, and real estate developers can request detailed microclimate data, zone-specific reports, and collaboration opportunities through IsoClime. This information can support research, urban planning, construction decisions, and climate-responsive development.</p>
     </div>
 
-    <div class="learn-card">
-      <h3>🔬 RESEARCH INSTITUTIONS</h3>
-      <p>Access raw microclimate datasets, longitudinal temperature and humidity records, and zone-level correlations. Ideal for academic research on urban heat, public health, and climate adaptation. Data exports available in JSON, CSV, and GeoJSON formats.</p>
-      <div class="learn-stat-grid">
-        <div class="learn-stat">
-          <span class="learn-stat-value">📊</span>
-          <span class="learn-stat-label">RAW DATASETS</span>
-        </div>
-        <div class="learn-stat">
-          <span class="learn-stat-value">📍</span>
-          <span class="learn-stat-label">ZONE-LEVEL RECORDS</span>
-        </div>
-      </div>
-    </div>
-
+    <!-- Partnership opportunities -->
     <div class="learn-card learn-accent2">
-      <h3>🏛 MUNICIPAL GOVERNMENTS</h3>
-      <p>Commission zone-specific climate reports for urban planning, zoning decisions, and public infrastructure. IsoClime provides actionable insights on heat-risk corridors, green infrastructure placement, and emergency response prioritization.</p>
-      <div class="learn-stat-grid">
-        <div class="learn-stat">
-          <span class="learn-stat-value">🗺</span>
-          <span class="learn-stat-label">URBAN PLANNING REPORTS</span>
+      <h3>🤝 PARTNERSHIP OPPORTUNITIES</h3>
+      <p style="margin-bottom:0.75rem;">We collaborate with public and private organisations on a range of initiatives:</p>
+      <ul style="list-style:none;padding:0;display:grid;gap:0.5rem;">
+        <li style="display:flex;align-items:flex-start;gap:0.6rem;font-size:0.79rem;color:var(--clr-muted);line-height:1.6;"><span style="color:var(--clr-accent2);flex-shrink:0;">◈</span> Research partnerships</li>
+        <li style="display:flex;align-items:flex-start;gap:0.6rem;font-size:0.79rem;color:var(--clr-muted);line-height:1.6;"><span style="color:var(--clr-accent2);flex-shrink:0;">◈</span> Data access for environmental studies</li>
+        <li style="display:flex;align-items:flex-start;gap:0.6rem;font-size:0.79rem;color:var(--clr-muted);line-height:1.6;"><span style="color:var(--clr-accent2);flex-shrink:0;">◈</span> Pilot deployments in cities or campuses</li>
+        <li style="display:flex;align-items:flex-start;gap:0.6rem;font-size:0.79rem;color:var(--clr-muted);line-height:1.6;"><span style="color:var(--clr-accent2);flex-shrink:0;">◈</span> Urban planning and climate analysis</li>
+        <li style="display:flex;align-items:flex-start;gap:0.6rem;font-size:0.79rem;color:var(--clr-muted);line-height:1.6;"><span style="color:var(--clr-accent2);flex-shrink:0;">◈</span> Health and environmental monitoring</li>
+      </ul>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- Inquiry form -->
+    <div class="section-heading">◈ INQUIRY FORM</div>
+
+    <form id="partner-form" onsubmit="submitPartnerForm(event)">
+      <div style="display:grid;gap:1rem;">
+
+        <div>
+          <div class="label">Name *</div>
+          <input id="pf-name" class="text-input" type="text" placeholder="Your full name" required />
         </div>
-        <div class="learn-stat">
-          <span class="learn-stat-value">🌿</span>
-          <span class="learn-stat-label">GREEN INFRA GUIDANCE</span>
+
+        <div>
+          <div class="label">Organization / Institution *</div>
+          <input id="pf-org" class="text-input" type="text" placeholder="e.g. City of San Pedro Sula" required />
         </div>
+
+        <div>
+          <div class="label">Position / Role</div>
+          <input id="pf-role" class="text-input" type="text" placeholder="e.g. Urban Planner, Research Director" />
+        </div>
+
+        <div>
+          <div class="label">Email Address *</div>
+          <input id="pf-email" class="text-input" type="email" placeholder="you@example.com" required />
+        </div>
+
+        <div>
+          <div class="label">Phone Number</div>
+          <input id="pf-phone" class="text-input" type="tel" placeholder="+1 (555) 000-0000" />
+        </div>
+
+        <div>
+          <div class="label">Type of Organization *</div>
+          <select id="pf-type" class="text-input" required style="cursor:pointer;">
+            <option value="" disabled selected>— Select type —</option>
+            <option value="Government">Government</option>
+            <option value="Research Institute">Research Institute</option>
+            <option value="Business">Business</option>
+            <option value="NGO">NGO</option>
+          </select>
+        </div>
+
+        <div>
+          <div class="label">Message / Inquiry *</div>
+          <textarea id="pf-message" class="text-input" rows="5"
+                    placeholder="Describe your data needs, research goals, or collaboration interest…"
+                    required style="resize:vertical;"></textarea>
+        </div>
+
+        <p style="font-size:0.7rem;color:var(--clr-muted);line-height:1.7;text-align:center;">
+          ✉ Responses are typically provided within <strong>3–5 business days</strong>.<br/>
+          Your inquiry will be sent to <strong>Team1Isoclime@outlook.com</strong>.
+        </p>
+
+        <div class="cta-row">
+          <button type="submit" class="btn btn-primary">◈ REQUEST DETAILED DATA</button>
+          <button type="button" class="btn"
+                  onclick="window.location.href='mailto:Team1Isoclime@outlook.com?subject=IsoClime%20Inquiry'">
+            ✉ CONTACT ISOCLIME
+          </button>
+        </div>
+
       </div>
-    </div>
+    </form>
 
-    <div class="learn-card learn-warn">
-      <h3>🏗 REAL ESTATE DEVELOPERS</h3>
-      <p>Obtain pre-development microclimate assessments for construction sites and residential developments. Understand how local heat, humidity, and airflow patterns will affect occupant comfort, energy efficiency, and building design requirements.</p>
-      <div class="learn-stat-grid">
-        <div class="learn-stat">
-          <span class="learn-stat-value">🏠</span>
-          <span class="learn-stat-label">SITE ASSESSMENTS</span>
-        </div>
-        <div class="learn-stat">
-          <span class="learn-stat-value">⚡</span>
-          <span class="learn-stat-label">ENERGY EFFICIENCY DATA</span>
-        </div>
-      </div>
-    </div>
-
-    <hr class="divider" style="margin:1.5rem 0;" />
-
-    <p style="color:var(--clr-muted);font-size:0.8rem;text-align:center;margin-bottom:1.5rem;line-height:1.8;">
-      Ready to collaborate? Contact us to discuss a data contract or partnership agreement tailored to your organization's needs.
-    </p>
-
-    <div class="cta-row">
-      <button class="btn btn-primary"
-              onclick="window.location.href='mailto:data@isoclime.io?subject=Data%20Request%20%E2%80%94%20IsoClime&body=Hello%2C%0A%0AI%20am%20interested%20in%20requesting%20detailed%20microclimate%20data%20from%20IsoClime.%0A%0AOrganization%3A%0AUse%20case%3A%0AData%20format%20required%3A%0A'">
-        ◈ REQUEST DETAILED DATA
-      </button>
-      <button class="btn"
-              onclick="window.location.href='mailto:contact@isoclime.io?subject=Partnership%20Inquiry%20%E2%80%94%20IsoClime&body=Hello%2C%0A%0AI%20would%20like%20to%20learn%20more%20about%20partnering%20with%20IsoClime.%0A%0AOrganization%3A%0AType%20(Research%20%2F%20Government%20%2F%20Real%20Estate)%3A%0AMessage%3A%0A'">
-        ✉ CONTACT ISOCLIME
-      </button>
-    </div>
   </div>
 </div>
 
@@ -1436,6 +1462,35 @@ function showPage(id) {
 
 function goToHome() {
   showPage('page-home');
+}
+
+// ================== PARTNER INQUIRY FORM ==================
+function submitPartnerForm(e) {
+  e.preventDefault();
+  var name    = document.getElementById('pf-name').value.trim();
+  var org     = document.getElementById('pf-org').value.trim();
+  var role    = document.getElementById('pf-role').value.trim();
+  var email   = document.getElementById('pf-email').value.trim();
+  var phone   = document.getElementById('pf-phone').value.trim();
+  var type    = document.getElementById('pf-type').value;
+  var message = document.getElementById('pf-message').value.trim();
+
+  var subject = encodeURIComponent('IsoClime Partnership Inquiry - ' + org);
+  var body = encodeURIComponent(
+    'Name: ' + name + '\n' +
+    'Organization / Institution: ' + org + '\n' +
+    'Position / Role: ' + (role || '-') + '\n' +
+    'Email: ' + email + '\n' +
+    'Phone: ' + (phone || '-') + '\n' +
+    'Type of Organization: ' + type + '\n\n' +
+    'Message:\n' + message
+  );
+  var mailto = 'mailto:Team1Isoclime@outlook.com?subject=' + subject + '&body=' + body;
+  if (mailto.length > 2000) {
+    alert('Your message is too long for automatic email. Please send it manually to Team1Isoclime@outlook.com');
+    return;
+  }
+  window.location.href = mailto;
 }
 
 // ================== MAP / ZONE SELECTION (Leaflet) ==================
