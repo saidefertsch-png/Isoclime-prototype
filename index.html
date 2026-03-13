@@ -92,6 +92,19 @@
       94% { transform: translate(-3px, -1px); }
     }
 
+    /* ── Logo bounce (idle) ────────────────────────── */
+    @keyframes logo-bounce {
+      0%,  45%, 100% { transform: translateY(0);    }
+      55%             { transform: translateY(-12px); }
+      65%             { transform: translateY(-6px);  }
+      75%             { transform: translateY(-10px); }
+      85%             { transform: translateY(-3px);  }
+    }
+    #isoclime-logo {
+      animation: logo-bounce 3.6s ease-in-out infinite;
+      transform-origin: center bottom;
+    }
+
     /* ── Buttons ───────────────────────────────────── */
     .btn {
       background: transparent;
@@ -667,7 +680,7 @@
   </div>
   <div class="page-container">
     <div style="text-align:center;padding:3rem 1rem 2rem;">
-      <img src="https://github.com/user-attachments/assets/c0c70463-cfd2-45b0-81cb-d9f0d0aeadc6"
+      <img src="https://github.com/user-attachments/assets/62902e3a-7c39-4a35-8b6a-1526678150e1"
            id="isoclime-logo"
            alt="IsoClime"
            style="max-width:420px;width:90%;height:auto;margin-bottom:0.25rem;"
