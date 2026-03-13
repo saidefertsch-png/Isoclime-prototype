@@ -55,6 +55,8 @@
       max-width: 680px;
       margin: 0 auto;
       padding: 1.5rem 1rem;
+      position: relative;
+      z-index: 1;
     }
 
     /* ── Buttons ───────────────────────────────────── */
@@ -345,7 +347,28 @@
 
     /* ── Cloud background (home page only) ─────────── */
     #page-home { position: relative; overflow: hidden; }
-    #page-home .page-container { position: relative; z-index: 1; }
+    /* ── Shared page positioning + decoration layer ── */
+    #page-map, #page-questions, #page-results { position: relative; }
+    .metal-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .deco { position: absolute; opacity: 0.65; }
+    @keyframes metal-float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      40%       { transform: translateY(-9px) rotate(3deg); }
+      70%       { transform: translateY(5px) rotate(-2deg); }
+    }
+    @keyframes metal-float2 {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      35%       { transform: translateY(7px) rotate(-3deg); }
+      65%       { transform: translateY(-6px) rotate(2deg); }
+    }
+    .deco-a { animation: metal-float  7s ease-in-out infinite; }
+    .deco-b { animation: metal-float2 9s ease-in-out 1.5s infinite; }
+    .deco-c { animation: metal-float 11s ease-in-out 3.5s infinite; }
     #cloud-layer {
       position: absolute;
       inset: 0;
@@ -401,6 +424,53 @@
     <div class="cloud cloud-5"></div>
     <div class="cloud cloud-6"></div>
   </div>
+  <div class="metal-layer" aria-hidden="true">
+    <!-- asterisk top-right -->
+    <div class="deco deco-a" style="top:6%;right:3%;">
+      <svg viewBox="0 0 60 60" width="72" height="72">
+        <defs>
+          <linearGradient id="g-hm-ast" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#666"/><stop offset="30%" stop-color="#f0f0f0"/>
+            <stop offset="65%" stop-color="#aaa"/><stop offset="100%" stop-color="#444"/>
+          </linearGradient>
+        </defs>
+        <g stroke="url(#g-hm-ast)" stroke-width="5" stroke-linecap="round" transform="translate(30,30)">
+          <line x1="0" y1="-22" x2="0" y2="22"/>
+          <line x1="-22" y1="0" x2="22" y2="0"/>
+          <line x1="-15.6" y1="-15.6" x2="15.6" y2="15.6"/>
+          <line x1="15.6" y1="-15.6" x2="-15.6" y2="15.6"/>
+        </g>
+      </svg>
+    </div>
+    <!-- sphere left-center -->
+    <div class="deco deco-b" style="top:44%;left:2%;">
+      <svg viewBox="0 0 60 60" width="58" height="58">
+        <defs>
+          <radialGradient id="g-hm-sph" cx="21" cy="17" r="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="35%" stop-color="#cccccc"/>
+            <stop offset="70%" stop-color="#555555"/>
+            <stop offset="100%" stop-color="#181818"/>
+          </radialGradient>
+        </defs>
+        <circle cx="30" cy="30" r="27" fill="url(#g-hm-sph)"/>
+      </svg>
+    </div>
+    <!-- squiggle bottom-right -->
+    <div class="deco deco-c" style="bottom:8%;right:2%;">
+      <svg viewBox="0 0 70 115" width="56" height="92">
+        <defs>
+          <linearGradient id="g-hm-sqg" x1="0" y1="0" x2="70" y2="115" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#777"/><stop offset="25%" stop-color="#fff"/>
+            <stop offset="55%" stop-color="#999"/><stop offset="80%" stop-color="#ddd"/>
+            <stop offset="100%" stop-color="#555"/>
+          </linearGradient>
+        </defs>
+        <path d="M35,8 C65,8 65,50 35,57 C5,64 5,100 35,107"
+              fill="none" stroke="url(#g-hm-sqg)" stroke-width="13" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
   <div class="page-container">
     <div style="text-align:center;padding:3rem 1rem 2rem;">
       <img src="https://github.com/user-attachments/assets/435e8f39-b05d-4469-8326-59f239e2f8c7"
@@ -436,6 +506,53 @@
      MAP / ZONE SELECTION PAGE
      ======================================================== -->
 <div id="page-map" class="page">
+  <div class="metal-layer" aria-hidden="true">
+    <!-- squiggle top-right -->
+    <div class="deco deco-b" style="top:4%;right:2%;">
+      <svg viewBox="0 0 70 115" width="52" height="86">
+        <defs>
+          <linearGradient id="g-mp-sqg" x1="0" y1="0" x2="70" y2="115" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#888"/><stop offset="28%" stop-color="#eee"/>
+            <stop offset="60%" stop-color="#aaa"/><stop offset="85%" stop-color="#ddd"/>
+            <stop offset="100%" stop-color="#555"/>
+          </linearGradient>
+        </defs>
+        <path d="M35,8 C65,8 65,50 35,57 C5,64 5,100 35,107"
+              fill="none" stroke="url(#g-mp-sqg)" stroke-width="13" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <!-- asterisk left-center -->
+    <div class="deco deco-a" style="top:45%;left:2%;">
+      <svg viewBox="0 0 60 60" width="66" height="66">
+        <defs>
+          <linearGradient id="g-mp-ast" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#666"/><stop offset="30%" stop-color="#f0f0f0"/>
+            <stop offset="65%" stop-color="#aaa"/><stop offset="100%" stop-color="#444"/>
+          </linearGradient>
+        </defs>
+        <g stroke="url(#g-mp-ast)" stroke-width="5" stroke-linecap="round" transform="translate(30,30)">
+          <line x1="0" y1="-22" x2="0" y2="22"/>
+          <line x1="-22" y1="0" x2="22" y2="0"/>
+          <line x1="-15.6" y1="-15.6" x2="15.6" y2="15.6"/>
+          <line x1="15.6" y1="-15.6" x2="-15.6" y2="15.6"/>
+        </g>
+      </svg>
+    </div>
+    <!-- 4-pointed spike bottom-right -->
+    <div class="deco deco-c" style="bottom:6%;right:3%;">
+      <svg viewBox="0 0 80 80" width="64" height="64">
+        <defs>
+          <linearGradient id="g-mp-spk" x1="0" y1="80" x2="80" y2="0" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#444"/>
+            <stop offset="50%" stop-color="#eeeeee"/>
+            <stop offset="100%" stop-color="#888"/>
+          </linearGradient>
+        </defs>
+        <path d="M40,2 L43,37 L78,40 L43,43 L40,78 L37,43 L2,40 L37,37 Z"
+              fill="url(#g-mp-spk)"/>
+      </svg>
+    </div>
+  </div>
   <div class="page-container">
     <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
       <button class="btn" onclick="goToHome()" style="padding:0.5rem 1rem;font-size:0.7rem;">◁ BACK</button>
@@ -470,6 +587,53 @@
      QUESTIONS PAGE
      ======================================================== -->
 <div id="page-questions" class="page">
+  <div class="metal-layer" aria-hidden="true">
+    <!-- sphere top-left -->
+    <div class="deco deco-b" style="top:5%;left:2%;">
+      <svg viewBox="0 0 60 60" width="54" height="54">
+        <defs>
+          <radialGradient id="g-qp-sph" cx="21" cy="17" r="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="35%" stop-color="#cccccc"/>
+            <stop offset="70%" stop-color="#555555"/>
+            <stop offset="100%" stop-color="#181818"/>
+          </radialGradient>
+        </defs>
+        <circle cx="30" cy="30" r="27" fill="url(#g-qp-sph)"/>
+      </svg>
+    </div>
+    <!-- asterisk right-center -->
+    <div class="deco deco-a" style="top:42%;right:2%;">
+      <svg viewBox="0 0 60 60" width="64" height="64">
+        <defs>
+          <linearGradient id="g-qp-ast" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#666"/><stop offset="30%" stop-color="#f0f0f0"/>
+            <stop offset="65%" stop-color="#aaa"/><stop offset="100%" stop-color="#444"/>
+          </linearGradient>
+        </defs>
+        <g stroke="url(#g-qp-ast)" stroke-width="5" stroke-linecap="round" transform="translate(30,30)">
+          <line x1="0" y1="-22" x2="0" y2="22"/>
+          <line x1="-22" y1="0" x2="22" y2="0"/>
+          <line x1="-15.6" y1="-15.6" x2="15.6" y2="15.6"/>
+          <line x1="15.6" y1="-15.6" x2="-15.6" y2="15.6"/>
+        </g>
+      </svg>
+    </div>
+    <!-- squiggle bottom-left -->
+    <div class="deco deco-c" style="bottom:7%;left:1%;">
+      <svg viewBox="0 0 70 115" width="50" height="82">
+        <defs>
+          <linearGradient id="g-qp-sqg" x1="0" y1="0" x2="70" y2="115" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#777"/><stop offset="25%" stop-color="#fff"/>
+            <stop offset="55%" stop-color="#999"/><stop offset="80%" stop-color="#ddd"/>
+            <stop offset="100%" stop-color="#555"/>
+          </linearGradient>
+        </defs>
+        <path d="M35,8 C65,8 65,50 35,57 C5,64 5,100 35,107"
+              fill="none" stroke="url(#g-qp-sqg)" stroke-width="13" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
   <div class="page-container">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
       <button class="btn"
@@ -495,6 +659,53 @@
      RESULTS PAGE
      ======================================================== -->
 <div id="page-results" class="page">
+  <div class="metal-layer" aria-hidden="true">
+    <!-- squiggle top-left -->
+    <div class="deco deco-a" style="top:3%;left:1%;">
+      <svg viewBox="0 0 70 115" width="58" height="95">
+        <defs>
+          <linearGradient id="g-rp-sqg" x1="0" y1="0" x2="70" y2="115" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#888"/><stop offset="28%" stop-color="#fff"/>
+            <stop offset="58%" stop-color="#aaa"/><stop offset="82%" stop-color="#ddd"/>
+            <stop offset="100%" stop-color="#555"/>
+          </linearGradient>
+        </defs>
+        <path d="M35,8 C65,8 65,50 35,57 C5,64 5,100 35,107"
+              fill="none" stroke="url(#g-rp-sqg)" stroke-width="13" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <!-- sphere right-center -->
+    <div class="deco deco-b" style="top:38%;right:2%;">
+      <svg viewBox="0 0 60 60" width="58" height="58">
+        <defs>
+          <radialGradient id="g-rp-sph" cx="21" cy="17" r="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="35%" stop-color="#cccccc"/>
+            <stop offset="70%" stop-color="#555555"/>
+            <stop offset="100%" stop-color="#181818"/>
+          </radialGradient>
+        </defs>
+        <circle cx="30" cy="30" r="27" fill="url(#g-rp-sph)"/>
+      </svg>
+    </div>
+    <!-- asterisk bottom-right -->
+    <div class="deco deco-c" style="bottom:6%;right:3%;">
+      <svg viewBox="0 0 60 60" width="68" height="68">
+        <defs>
+          <linearGradient id="g-rp-ast" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#666"/><stop offset="30%" stop-color="#f0f0f0"/>
+            <stop offset="65%" stop-color="#aaa"/><stop offset="100%" stop-color="#444"/>
+          </linearGradient>
+        </defs>
+        <g stroke="url(#g-rp-ast)" stroke-width="5" stroke-linecap="round" transform="translate(30,30)">
+          <line x1="0" y1="-22" x2="0" y2="22"/>
+          <line x1="-22" y1="0" x2="22" y2="0"/>
+          <line x1="-15.6" y1="-15.6" x2="15.6" y2="15.6"/>
+          <line x1="15.6" y1="-15.6" x2="-15.6" y2="15.6"/>
+        </g>
+      </svg>
+    </div>
+  </div>
   <div class="page-container">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
       <button class="btn" onclick="restartApp()" style="padding:0.5rem 1rem;font-size:0.7rem;">◁ NEW SCAN</button>
