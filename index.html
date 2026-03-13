@@ -57,45 +57,6 @@
       padding: 1.5rem 1rem;
     }
 
-    /* ── Glitch title ──────────────────────────────── */
-    .glitch {
-      font-family: 'Orbitron', monospace;
-      font-size: 2.8rem;
-      font-weight: 900;
-      color: var(--clr-accent);
-      position: relative;
-      display: inline-block;
-      text-shadow: 0 0 24px rgba(0,255,224,0.45);
-    }
-    .glitch::before,
-    .glitch::after {
-      content: attr(data-text);
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%;
-      overflow: hidden;
-    }
-    .glitch::before {
-      color: var(--clr-accent2);
-      animation: glitch1 3s infinite;
-      clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
-    }
-    .glitch::after {
-      color: var(--clr-accent);
-      animation: glitch2 3s infinite;
-      clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
-    }
-    @keyframes glitch1 {
-      0%, 88%, 100% { transform: translate(0); }
-      90% { transform: translate(-3px, 1px); }
-      94% { transform: translate(3px, -1px); }
-    }
-    @keyframes glitch2 {
-      0%, 88%, 100% { transform: translate(0); }
-      90% { transform: translate(3px, 1px); }
-      94% { transform: translate(-3px, -1px); }
-    }
-
     /* ── Buttons ───────────────────────────────────── */
     .btn {
       background: transparent;
@@ -391,7 +352,9 @@
 <div id="page-home" class="page active">
   <div class="page-container">
     <div style="text-align:center;padding:3rem 1rem 2rem;">
-      <h1 class="glitch" data-text="ISOCLIME">ISOCLIME</h1>
+      <img src="https://github.com/user-attachments/assets/435e8f39-b05d-4469-8326-59f239e2f8c7"
+           alt="ISOCLIME"
+           style="max-width:340px;width:90%;height:auto;filter:drop-shadow(0 0 18px rgba(0,200,255,0.35));margin-bottom:0.25rem;" />
       <p id="tagline-text" style="font-family:'VT323',monospace;font-size:1.4rem;color:var(--clr-muted);letter-spacing:0.28em;margin:0.6rem 0 2rem;">DETECT. DEFLECT. PROTECT.</p>
       <p style="color:var(--clr-muted);font-size:0.8rem;max-width:420px;margin:0 auto 2.5rem;line-height:1.8;">
         AI-powered microclimate analysis for your neighborhood. Identify heat stress, humidity risk, and get actionable solutions.
@@ -1246,12 +1209,9 @@ const defaultConfig = {
 window.elementSdk.init({
   defaultConfig,
   onConfigChange: async (config) => {
-    // App title
-    const titleEls = document.querySelectorAll('.glitch');
-    titleEls.forEach(el => {
-      el.textContent = config.app_title || defaultConfig.app_title;
-      el.setAttribute('data-text', config.app_title || defaultConfig.app_title);
-    });
+    // App title (logo image — update alt text; src stays fixed)
+    const logoImg = document.querySelector('#page-home img[alt]');
+    if (logoImg) logoImg.setAttribute('alt', config.app_title || defaultConfig.app_title);
 
     // Tagline
     const taglineEl = document.getElementById('tagline-text');
