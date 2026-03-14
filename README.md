@@ -43,13 +43,24 @@ The deploy workflow (`.github/workflows/deploy.yml`) will run automatically on e
 The `CNAME` file in this repo is already set to `isoclimehn.shop`.
 Follow these steps to finish connecting your Namecheap domain to GitHub Pages.
 
+### ⚠️ Step 0 — Switch DNS type to "Namecheap BasicDNS" (required first!)
+
+If you open the **Advanced DNS** tab and the **HOST RECORDS** section shows no "Add New Record" button — only a message about changing the DNS type — it means your domain is currently on **Namecheap Web Hosting DNS**, which does not let you edit host records.
+
+You must switch to **BasicDNS** first:
+
+1. Log in to [namecheap.com](https://www.namecheap.com) → **Domain List** → click **Manage** next to `isoclimehn.shop`.
+2. Click the **Domain** tab (the house icon).
+3. Find the **Nameservers** section and open the dropdown. It likely says "Namecheap Web Hosting DNS".
+4. Change it to **"Namecheap BasicDNS"**.
+5. Click the **✔** (green checkmark) to save.
+6. Now click the **Advanced DNS** tab — the **HOST RECORDS** section will show the "Add New Record" button.
+
 ### Step 1 — Add DNS records in Namecheap
 
-1. Log in to [namecheap.com](https://www.namecheap.com) and go to **Domain List**.
-2. Click **Manage** next to `isoclimehn.shop`.
-3. Click the **Advanced DNS** tab.
-4. Delete any existing A records or CNAME records for `@` and `www` that Namecheap added by default.
-5. Add the following records (click **Add New Record** for each one):
+1. Still on the **Advanced DNS** tab for `isoclimehn.shop`.
+2. Delete any existing A records or CNAME records for `@` and `www` that Namecheap may have pre-filled.
+3. Add the following records (click **Add New Record** for each one):
 
 **Four A records (apex domain `@`):**
 
@@ -66,7 +77,7 @@ Follow these steps to finish connecting your Namecheap domain to GitHub Pages.
 |------|------|-------|-----|
 | CNAME Record | `www` | `saidefertsch-png.github.io` | Automatic |
 
-6. Click the **✔ (Save All Changes)** button.
+4. Click the **✔ (Save All Changes)** button.
 
 ### Step 2 — Set the custom domain in GitHub Pages settings
 
