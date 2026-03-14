@@ -36,6 +36,42 @@ The deploy workflow (`.github/workflows/deploy.yml`) will run automatically on e
 
 ---
 
+## 🌍 Custom domain setup (fix `InvalidDNSError`)
+
+GitHub Pages is configured to serve the site at **https://isoclimehn.com** via the `CNAME` file.
+To resolve the `InvalidDNSError` ("Domain's DNS record could not be retrieved"), you must add DNS records at your domain registrar (Namecheap, GoDaddy, Cloudflare, etc.).
+
+### Step 1 — Add A records for the apex domain (`isoclimehn.com`)
+
+Log in to your registrar's DNS settings and add **four A records**:
+
+| Type | Name/Host | Value | TTL |
+|------|-----------|-------|-----|
+| A | `@` | `185.199.108.153` | 3600 |
+| A | `@` | `185.199.109.153` | 3600 |
+| A | `@` | `185.199.110.153` | 3600 |
+| A | `@` | `185.199.111.153` | 3600 |
+
+### Step 2 — Add a CNAME record for `www`
+
+| Type | Name/Host | Value | TTL |
+|------|-----------|-------|-----|
+| CNAME | `www` | `saidefertsch-png.github.io` | 3600 |
+
+### Step 3 — Set the custom domain in GitHub Pages settings
+
+1. Go to your repo → **Settings** → **Pages**.
+2. Under **"Custom domain"**, enter `isoclimehn.com` and click **Save**.
+3. Once the DNS check passes, tick **"Enforce HTTPS"**.
+
+### Step 4 — Wait for DNS propagation
+
+DNS changes can take **10 minutes to 48 hours** to fully propagate. After that, visiting **https://isoclimehn.com** will load the site.
+
+> **Note:** The `CNAME` file at the root of this repo already contains `IsoclimeHN.com`. DNS is case-insensitive, so `isoclimehn.com`, `IsoclimeHN.com`, and `ISOCLIMEHN.COM` all resolve to the same domain. No repository changes are needed — only the registrar-level DNS records above.
+
+---
+
 ## 🗂️ Project structure
 
 | File | Purpose |
