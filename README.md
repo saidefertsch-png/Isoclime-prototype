@@ -8,7 +8,9 @@ AI-powered microclimate analysis for your neighborhood — detect heat stress, h
 
 Once the PR is merged and GitHub Pages is enabled, the site is live at:
 
-**https://saidefertsch-png.github.io/Isoclime-prototype/**
+**https://isoclimehn.shop** (custom domain — see setup instructions below)
+
+or at the default GitHub Pages URL: **https://saidefertsch-png.github.io/Isoclime-prototype/**
 
 ---
 
@@ -36,39 +38,47 @@ The deploy workflow (`.github/workflows/deploy.yml`) will run automatically on e
 
 ---
 
-## 🌍 Custom domain setup (fix `InvalidDNSError`)
+## 🌍 Custom domain setup — `isoclimehn.shop` on Namecheap
 
-GitHub Pages is configured to serve the site at **https://isoclimehn.com** via the `CNAME` file.
-To resolve the `InvalidDNSError` ("Domain's DNS record could not be retrieved"), you must add DNS records at your domain registrar (Namecheap, GoDaddy, Cloudflare, etc.).
+The `CNAME` file in this repo is already set to `isoclimehn.shop`.
+Follow these steps to finish connecting your Namecheap domain to GitHub Pages.
 
-### Step 1 — Add A records for the apex domain (`isoclimehn.com`)
+### Step 1 — Add DNS records in Namecheap
 
-Log in to your registrar's DNS settings and add **four A records**:
+1. Log in to [namecheap.com](https://www.namecheap.com) and go to **Domain List**.
+2. Click **Manage** next to `isoclimehn.shop`.
+3. Click the **Advanced DNS** tab.
+4. Delete any existing A records or CNAME records for `@` and `www` that Namecheap added by default.
+5. Add the following records (click **Add New Record** for each one):
 
-| Type | Name/Host | Value | TTL |
-|------|-----------|-------|-----|
-| A | `@` | `185.199.108.153` | 3600 |
-| A | `@` | `185.199.109.153` | 3600 |
-| A | `@` | `185.199.110.153` | 3600 |
-| A | `@` | `185.199.111.153` | 3600 |
+**Four A records (apex domain `@`):**
 
-### Step 2 — Add a CNAME record for `www`
+| Type | Host | Value | TTL |
+|------|------|-------|-----|
+| A Record | `@` | `185.199.108.153` | Automatic |
+| A Record | `@` | `185.199.109.153` | Automatic |
+| A Record | `@` | `185.199.110.153` | Automatic |
+| A Record | `@` | `185.199.111.153` | Automatic |
 
-| Type | Name/Host | Value | TTL |
-|------|-----------|-------|-----|
-| CNAME | `www` | `saidefertsch-png.github.io` | 3600 |
+**One CNAME record (`www` subdomain):**
 
-### Step 3 — Set the custom domain in GitHub Pages settings
+| Type | Host | Value | TTL |
+|------|------|-------|-----|
+| CNAME Record | `www` | `saidefertsch-png.github.io` | Automatic |
+
+6. Click the **✔ (Save All Changes)** button.
+
+### Step 2 — Set the custom domain in GitHub Pages settings
 
 1. Go to your repo → **Settings** → **Pages**.
-2. Under **"Custom domain"**, enter `isoclimehn.com` and click **Save**.
-3. Once the DNS check passes, tick **"Enforce HTTPS"**.
+2. Under **"Custom domain"**, type `isoclimehn.shop` and click **Save**.
+3. GitHub will run a DNS check. Once it passes (green checkmark ✅), tick **"Enforce HTTPS"**.
 
-### Step 4 — Wait for DNS propagation
+### Step 3 — Wait for DNS propagation
 
-DNS changes can take **10 minutes to 48 hours** to fully propagate. After that, visiting **https://isoclimehn.com** will load the site.
+DNS changes on Namecheap typically take **10–30 minutes**, but can take up to 48 hours. Once propagated, your site will be live at **https://isoclimehn.shop**.
 
-> **Note:** The `CNAME` file at the root of this repo already contains `IsoclimeHN.com`. DNS is case-insensitive, so `isoclimehn.com`, `IsoclimeHN.com`, and `ISOCLIMEHN.COM` all resolve to the same domain. No repository changes are needed — only the registrar-level DNS records above.
+> **Tip:** You can check whether DNS has propagated by visiting [dnschecker.org](https://dnschecker.org) and searching for `isoclimehn.shop` with record type **A**. When you see `185.199.108.153` (or any of the four IPs above) appearing globally, you're good to go.
 
 ---
 
