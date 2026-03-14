@@ -40,8 +40,20 @@ The deploy workflow (`.github/workflows/deploy.yml`) will run automatically on e
 
 ## 🌍 Custom domain setup — `isoclimehn.shop` on Namecheap
 
+> ### 🟢 DNS has propagated — here is the one remaining step
+>
+> If you can see **all green checkmarks** for `isoclimehn.shop` (type A) on [dnschecker.org](https://dnschecker.org) but GitHub Pages still shows **"DNS check unsuccessful"**, GitHub just needs to recheck. It cached the failure from before propagation completed.
+>
+> **Do this right now:**
+> 1. Go to your repo → **Settings** → **Pages**
+> 2. Click the **"Check again"** button next to the red DNS error
+> 3. Wait 10–15 seconds — the red error should turn into a green ✅
+> 4. Once green, tick **"Enforce HTTPS"**
+>
+> That is the only step remaining. You do not need to change any DNS records or re-enter the domain.
+
 The `CNAME` file in this repo is already set to `isoclimehn.shop`.
-Follow these steps to finish connecting your Namecheap domain to GitHub Pages.
+Follow these one-time setup steps below if you ever need to redo the configuration from scratch.
 
 ### ⚠️ Step 0 — Switch DNS type to "Namecheap BasicDNS" (required first!)
 
