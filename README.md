@@ -40,17 +40,29 @@ The deploy workflow (`.github/workflows/deploy.yml`) will run automatically on e
 
 ## 🌍 Custom domain setup — `isoclimehn.shop` on Namecheap
 
-> ### 🟢 DNS has propagated — here is the one remaining step
+> ### 🟢 The site is already live at `http://isoclimehn.shop/` — you only need to enable HTTPS
 >
-> If you can see **all green checkmarks** for `isoclimehn.shop` (type A) on [dnschecker.org](https://dnschecker.org) but GitHub Pages still shows **"DNS check unsuccessful"**, GitHub just needs to recheck. It cached the failure from before propagation completed.
+> The deployment has succeeded. The URL `http://isoclimehn.shop/` (HTTP) is **already working**.
+> The only reason it may feel "broken" is that HTTPS is not yet enabled — and HTTPS requires GitHub's one-time DNS verification check to pass.
 >
-> **Do this right now:**
+> **Three-step checklist to finish:**
+>
+> **Step A — Open your browser and confirm HTTP loads the site:**
+> Go to `http://isoclimehn.shop/` (note: `http://` not `https://`). If the IsoClime page loads, DNS is fine and you are 90% done. Skip to Step C.
+>
+> **Step B — If `http://isoclimehn.shop/` does NOT load yet:**
+> The DNS record may not have propagated to your network yet, even if dnschecker.org shows green. Wait 15–30 more minutes and try again. You can also try on your mobile data connection (bypasses home router cache).
+>
+> **Step C — Enable HTTPS (the final step):**
 > 1. Go to your repo → **Settings** → **Pages**
-> 2. Click the **"Check again"** button next to the red DNS error
-> 3. Wait 10–15 seconds — the red error should turn into a green ✅
-> 4. Once green, tick **"Enforce HTTPS"**
+> 2. Under "Custom domain", the field should already show `isoclimehn.shop`
+> 3. If there is a red error ("DNS check unsuccessful"): click the **"Check again"** button. Wait 10–15 seconds. Repeat until it turns green ✅
+> 4. Once the check is green, tick **"Enforce HTTPS"** and click **Save**
+> 5. Done — `https://isoclimehn.shop/` is now live
 >
-> That is the only step remaining. You do not need to change any DNS records or re-enter the domain.
+> **If the custom domain field is blank or missing:** type `isoclimehn.shop` in the field and click Save, then follow Step C above.
+>
+> **If you want to force a fresh deployment at any time:** go to the **Actions** tab → select **"Deploy to GitHub Pages"** → click **"Run workflow"** → click the green **"Run workflow"** button.
 
 The `CNAME` file in this repo is already set to `isoclimehn.shop`.
 Follow these one-time setup steps below if you ever need to redo the configuration from scratch.
