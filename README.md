@@ -133,6 +133,10 @@ After saving DNS records in Namecheap, the changes must spread to DNS servers wo
 | `isoclimehn.shop` in the field, dnschecker.org is green | GitHub cached the old failure | Click **"Check again"** in GitHub Pages Settings |
 | dnschecker.org still shows no records after several hours | Records not saved in Namecheap | Go back to Namecheap Advanced DNS and confirm all 5 records are there and saved |
 
+### ❓ Does the `hn` in `isoclimehn.shop` mean it needs Honduras-specific IPs?
+
+**No.** The `hn` is just part of the brand name **IsoClime HN** — it is not the domain extension. The actual top-level domain (TLD) is `.shop`, which is a generic global domain. GitHub Pages uses the same four IP addresses (`185.199.108–111.153`) for **every** custom domain in the world, regardless of what country abbreviation appears in the name. Those IPs point to GitHub's global CDN, which serves visitors in Honduras and everywhere else. No special regional IPs are needed.
+
 ---
 
 ## 🗂️ Project structure
