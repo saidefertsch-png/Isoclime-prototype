@@ -1403,6 +1403,23 @@ const zones = [
   { name: 'Sector Cofradía',           lat: 15.5612, lng: -88.0512 },
   { name: 'Sector La Línea',           lat: 15.5534, lng: -88.0178 },
   { name: 'Col. Los Mangos',           lat: 15.5467, lng: -88.0201 },
+  // ── Sector Norte – Colonias y Barrios Adicionales ──
+  { name: 'Barrio Járagua',            lat: 15.5478, lng: -88.0112 },
+  { name: 'Res. Nova',                 lat: 15.5201, lng: -88.0212 },
+  { name: 'Col. Trópico',              lat: 15.5345, lng: -88.0289 },
+  { name: 'Col. Nueva Palestina',      lat: 15.5445, lng: -88.0267 },
+  { name: 'Col. Portal del Norte',     lat: 15.5423, lng: -88.0412 },
+  { name: 'Col. El Porvenir',          lat: 15.5334, lng: -88.0245 },
+  { name: 'Col. San Francisco Norte',  lat: 15.5356, lng: -88.0312 },
+  { name: 'Col. Las Torres',           lat: 15.5389, lng: -88.0289 },
+  { name: 'Barrio La Merced',          lat: 15.5289, lng: -88.0334 },
+  { name: 'Col. Villa Linda',          lat: 15.5312, lng: -88.0378 },
+  { name: 'Col. Santa Cruz Norte',     lat: 15.5456, lng: -88.0223 },
+  { name: 'Col. Brisas de Chamelecón', lat: 15.5534, lng: -88.0212 },
+  { name: 'Res. Country Hills',        lat: 15.5289, lng: -88.0201 },
+  { name: 'Col. El Rincón',            lat: 15.5412, lng: -88.0267 },
+  { name: 'Col. Las Margaritas',       lat: 15.5323, lng: -88.0156 },
+  { name: 'Barrio El Olvido',          lat: 15.5445, lng: -88.0289 },
   // ── Sector Noroeste ────────────────────────────
   { name: 'El Trapiche',             lat: 15.5234, lng: -88.0512 },
   { name: 'La Granja',               lat: 15.5123, lng: -88.0456 },
@@ -1592,21 +1609,24 @@ function selectZone(name, lat, lng) {
 }
 
 function filterZones(val) {
-  const v = val.trim().toLowerCase();
+  // NFD decomposes accented chars into base + combining diacritics (then stripped),
+  // so e.g. "jar" matches "Járagua" and "hernandez" matches "Hernández"
+  const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const v = norm(val.trim());
   const box = document.getElementById('zone-suggestions');
   _activeSuggestionIndex = -1;
 
   if (!v) { hideSuggestions(); return; }
 
-  const matches = zones.filter(z => z.name.toLowerCase().includes(v)).slice(0, 10);
+  const matches = zones.filter(z => norm(z.name).includes(v)).slice(0, 10);
   if (matches.length === 0) { hideSuggestions(); return; }
 
   box.innerHTML = '';
   matches.forEach(z => {
     const item = document.createElement('div');
     item.className = 'suggestion-item';
-    // Bold the matching portion
-    const idx = z.name.toLowerCase().indexOf(v);
+    // Bold the matching portion (search against normalized name, display original)
+    const idx = norm(z.name).indexOf(v);
     item.innerHTML = z.name.slice(0, idx)
       + '<strong>' + z.name.slice(idx, idx + v.length) + '</strong>'
       + z.name.slice(idx + v.length);
