@@ -81,9 +81,17 @@ You must switch to **BasicDNS** first:
 
 ### Step 2 — Set the custom domain in GitHub Pages settings
 
+> **🚨 Common mistake — type `.shop`, NOT `.com`!**
+> The domain you own is **`isoclimehn.shop`**. If you type `isoclimehn.com` (wrong ending) you will get "DNS check unsuccessful / InvalidDNSError" because `.com` has no DNS records pointing to GitHub.
+
 1. Go to your repo → **Settings** → **Pages**.
-2. Under **"Custom domain"**, type `isoclimehn.shop` and click **Save**.
-3. GitHub will run a DNS check. Once it passes (green checkmark ✅), tick **"Enforce HTTPS"**.
+2. Under **"Custom domain"**, clear the field completely and type exactly:
+   ```
+   isoclimehn.shop
+   ```
+   (ends in `.shop` — not `.com`, not `.net`, not anything else)
+3. Click **Save**.
+4. GitHub will run a DNS check. Once it passes (green checkmark ✅), tick **"Enforce HTTPS"**.
 
 ### Step 3 — Wait for DNS propagation
 
