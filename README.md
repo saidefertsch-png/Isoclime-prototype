@@ -6,7 +6,7 @@ AI-powered microclimate analysis for your neighborhood — detect heat stress, h
 
 ## 🌐 Live site
 
-Once the PR is merged and GitHub Pages is enabled, the site is live at:
+The site will be live at once this PR is merged:
 
 **https://isoclimehn.shop** (custom domain — see setup instructions below)
 
@@ -14,7 +14,27 @@ or at the default GitHub Pages URL: **https://saidefertsch-png.github.io/Isoclim
 
 ---
 
-## 🚀 How to merge the PR and publish the site
+## 🚀 How to publish the new version of the site
+
+> ### 🔴 Are you seeing an old dark-theme version of the site instead of the new teal/light version?
+>
+> This happens because GitHub Pages last deployed the site from the old `main` branch. The new version of the site — with the light teal theme, partner page, 100+ neighborhoods, and IsoClime logo — lives on **this PR branch**, and it needs to be deployed.
+>
+> **Option 1 — Fastest: Merge this PR (recommended)**
+> 1. Scroll to the top of this PR and click **"Ready for review"** (it is currently in Draft)
+> 2. Then click the green **"Merge pull request"** button
+> 3. Click **"Confirm merge"**
+> 4. The deploy workflow runs automatically and the new version is live within ~1 minute
+>
+> **Option 2 — Without merging: trigger a manual deploy**
+> 1. Go to your repo → **Actions** tab
+> 2. Click **"Deploy to GitHub Pages"** in the left sidebar
+> 3. Click the **"Run workflow"** dropdown on the right
+> 4. Select branch **`copilot/make-changes-to-interactive-school-project`** from the dropdown
+> 5. Click the green **"Run workflow"** button
+> 6. Wait ~1 minute then hard-refresh the site (press **Ctrl+Shift+R** on Windows/Linux, or **⌘+Shift+R** on Mac)
+>
+> **After the new version loads, if it still looks old: press Ctrl+Shift+R (hard refresh) to bypass your browser's cache.**
 
 ### Step 1 — Mark the PR as ready
 
