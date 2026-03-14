@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - copilot/make-changes-to-interactive-school-project
   workflow_dispatch:
 
 permissions:

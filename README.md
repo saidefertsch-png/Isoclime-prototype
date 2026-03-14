@@ -4,43 +4,34 @@ AI-powered microclimate analysis for your neighborhood — detect heat stress, h
 
 ---
 
+## 🔴 Are you seeing an old dark-theme version of the site?
+
+The site redirects correctly to `isoclimehn.shop`, but you might be seeing the **old dark/cyberpunk version** instead of the new light teal version. Here is why and how to fix it in 3 clicks:
+
+**Why it happens:** GitHub Pages only deployed once — when the first basic PR was merged. All the big improvements (light teal theme, Partner page, 100+ neighborhoods, IsoClime logo, inquiry form) are on *this* PR and haven't been deployed yet because **this PR is still in Draft**.
+
+**Fix (3 clicks):**
+1. Open **[Pull Request #3](https://github.com/saidefertsch-png/Isoclime-prototype/pull/3)** — that's this PR.
+2. Click **"Ready for review"** (bottom of the PR page) — this takes it out of Draft mode.
+3. Click the green **"Merge pull request"** button, then **"Confirm merge"**.
+
+The deploy workflow runs automatically after the merge. Within ~60 seconds the new version is live. If the site still looks old after 60 seconds, press **Ctrl+Shift+R** (Windows/Linux) or **⌘+Shift+R** (Mac) to hard-refresh your browser.
+
+---
+
 ## 🌐 Live site
 
-The site will be live at once this PR is merged:
-
-**https://isoclimehn.shop** (custom domain — see setup instructions below)
+**https://isoclimehn.shop** (custom domain)
 
 or at the default GitHub Pages URL: **https://saidefertsch-png.github.io/Isoclime-prototype/**
 
 ---
 
-## 🚀 How to publish the new version of the site
-
-> ### 🔴 Are you seeing an old dark-theme version of the site instead of the new teal/light version?
->
-> This happens because GitHub Pages last deployed the site from the old `main` branch. The new version of the site — with the light teal theme, partner page, 100+ neighborhoods, and IsoClime logo — lives on **this PR branch**, and it needs to be deployed.
->
-> **Option 1 — Fastest: Merge this PR (recommended)**
-> 1. Scroll to the top of this PR and click **"Ready for review"** (it is currently in Draft)
-> 2. Then click the green **"Merge pull request"** button
-> 3. Click **"Confirm merge"**
-> 4. The deploy workflow runs automatically and the new version is live within ~1 minute
->
-> **Option 2 — Without merging: trigger a manual deploy**
-> 1. Go to your repo → **Actions** tab
-> 2. Click **"Deploy to GitHub Pages"** in the left sidebar
-> 3. Click the **"Run workflow"** dropdown on the right
-> 4. Select branch **`copilot/make-changes-to-interactive-school-project`** from the dropdown
-> 5. Click the green **"Run workflow"** button
-> 6. Wait ~1 minute then hard-refresh the site (press **Ctrl+Shift+R** on Windows/Linux, or **⌘+Shift+R** on Mac)
->
-> **After the new version loads, if it still looks old: press Ctrl+Shift+R (hard refresh) to bypass your browser's cache.**
-
-### Step 1 — Mark the PR as ready
+## 🚀 How to merge this PR and publish the updated site
 
 The PR starts in **Draft** mode. To merge it:
 
-1. Open **[Pull Request #1](https://github.com/saidefertsch-png/Isoclime-prototype/pull/1)** on GitHub.
+1. Open **[Pull Request #3](https://github.com/saidefertsch-png/Isoclime-prototype/pull/3)** on GitHub (that's this PR).
 2. Scroll to the bottom and click **"Ready for review"**.
 
 ### Step 2 — Merge the PR
