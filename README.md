@@ -79,10 +79,26 @@ You must switch to **BasicDNS** first:
 
 4. Click the **✔ (Save All Changes)** button.
 
-### Step 2 — Set the custom domain in GitHub Pages settings
+### Step 2 — Wait for DNS propagation and verify it worked
+
+After saving DNS records in Namecheap, the changes must spread to DNS servers worldwide before GitHub can see them. **This takes 10–30 minutes on average, but can take up to 48 hours.** Do not skip this step — setting the GitHub Pages custom domain before DNS has propagated will always give you "DNS check unsuccessful".
+
+**How to check (do this before moving to Step 3):**
+
+1. Go to **[dnschecker.org](https://dnschecker.org)**.
+2. Type `isoclimehn.shop` in the search box and select record type **A**.
+3. Click **Search**.
+4. When you see green checkmarks showing `185.199.108.153` (or any of the four GitHub IPs) across most locations, DNS has propagated. ✅
+
+> ⏳ **Just added your records?** Wait at least 15–30 minutes before checking. If dnschecker.org still shows nothing or shows old IPs, just wait a bit longer and refresh.
+
+### Step 3 — Set the custom domain in GitHub Pages settings
+
+> **🚨 Only do this step AFTER dnschecker.org shows green checkmarks for `isoclimehn.shop`.**
+> If you set the custom domain before DNS has propagated, GitHub will immediately show "DNS check unsuccessful / InvalidDNSError". That is not a permanent error — it just means GitHub checked too early. Click **"Check again"** once dnschecker.org confirms propagation.
 
 > **🚨 Common mistake — type `.shop`, NOT `.com`!**
-> The domain you own is **`isoclimehn.shop`**. If you type `isoclimehn.com` (wrong ending) you will get "DNS check unsuccessful / InvalidDNSError" because `.com` has no DNS records pointing to GitHub.
+> The domain you own is **`isoclimehn.shop`**. Typing `isoclimehn.com` will also give "DNS check unsuccessful" because `.com` has no records pointing to GitHub.
 
 1. Go to your repo → **Settings** → **Pages**.
 2. Under **"Custom domain"**, clear the field completely and type exactly:
@@ -91,13 +107,19 @@ You must switch to **BasicDNS** first:
    ```
    (ends in `.shop` — not `.com`, not `.net`, not anything else)
 3. Click **Save**.
-4. GitHub will run a DNS check. Once it passes (green checkmark ✅), tick **"Enforce HTTPS"**.
+4. GitHub will run a DNS check. If it passes (green checkmark ✅), tick **"Enforce HTTPS"** and you're done!
+5. If it still shows "DNS check unsuccessful" after dnschecker.org is green: wait 5 more minutes, then click **"Check again"** inside the GitHub Pages settings. Repeat until it passes.
 
-### Step 3 — Wait for DNS propagation
+---
 
-DNS changes on Namecheap typically take **10–30 minutes**, but can take up to 48 hours. Once propagated, your site will be live at **https://isoclimehn.shop**.
+### 🛠️ Troubleshooting — "DNS check unsuccessful" even with the correct domain
 
-> **Tip:** You can check whether DNS has propagated by visiting [dnschecker.org](https://dnschecker.org) and searching for `isoclimehn.shop` with record type **A**. When you see `185.199.108.153` (or any of the four IPs above) appearing globally, you're good to go.
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `isoclimehn.com` in the field | Wrong domain (`.com` ≠ `.shop`) | Clear the field, type `isoclimehn.shop`, click Save |
+| `isoclimehn.shop` in the field, just added DNS records | DNS hasn't propagated yet | Wait 15–60 min, check dnschecker.org, then click "Check again" |
+| `isoclimehn.shop` in the field, dnschecker.org is green | GitHub cached the old failure | Click **"Check again"** in GitHub Pages Settings |
+| dnschecker.org still shows no records after several hours | Records not saved in Namecheap | Go back to Namecheap Advanced DNS and confirm all 5 records are there and saved |
 
 ---
 
