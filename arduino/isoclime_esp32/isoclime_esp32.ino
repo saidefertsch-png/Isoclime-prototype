@@ -39,7 +39,8 @@
 
 // ═══════════════════════ CONFIGURATION ═══════════════════════════════════════
 
-// Set to 1 if you only have a single DHT22 and no DS18B20 sensors yet
+// 0 = full hardware (3× DS18B20 + 1× DHT22)  ← default
+// 1 = single DHT22 only (synthetic zone offsets, no DS18B20)
 #define SINGLE_SENSOR_MODE  0
 
 // WiFi credentials — two options:
@@ -170,7 +171,8 @@ void setup() {
   Serial.printf("[Sensors] DS18B20 devices found: %d\n", count);
   if (count < 3) {
     Serial.println("[Sensors] WARNING: fewer than 3 DS18B20 sensors detected!");
-    Serial.println("           Check wiring or set #define SINGLE_SENSOR_MODE 1");
+    Serial.println("           Check wiring: data pin, 4.7 kΩ pull-up to 3.3 V, and power.");
+    Serial.println("           If running with fewer sensors intentionally, set SINGLE_SENSOR_MODE 1.");
   }
   // Print device addresses for reference
   DeviceAddress addr;
