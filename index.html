@@ -712,6 +712,180 @@
     </div>
    </div>
 
+   <!-- ══ SETUP GUIDE ══ -->
+   <div style="padding:0 32px; max-width:1400px; margin:0 auto 18px;">
+    <div class="glass-strong glow-green" style="border-radius:16px; overflow:hidden;">
+
+     <!-- Header row -->
+     <div style="display:flex; align-items:center; gap:12px; padding:18px 24px; flex-wrap:wrap;">
+      <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
+       <div style="width:36px; height:36px; flex-shrink:0; background:linear-gradient(135deg,rgba(52,211,153,0.2),rgba(52,211,153,0.08)); border:1px solid rgba(52,211,153,0.3); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+        <i data-lucide="book-open" style="width:18px;height:18px;color:#34d399;"></i>
+       </div>
+       <div style="min-width:0;">
+        <div style="font-size:15px; font-weight:700; color:#0f2f28;">Setup Guide — Exact Steps</div>
+        <div style="font-size:11px; color:#0d7377; opacity:0.8; margin-top:1px;">From hardware to live dashboard — follow in order</div>
+       </div>
+      </div>
+      <button onclick="toggleSetup()" style="display:flex; align-items:center; gap:6px; background:rgba(52,211,153,0.08); color:#047857; border:1px solid rgba(52,211,153,0.25); border-radius:9px; padding:7px 14px; font-size:12px; font-weight:600; cursor:pointer; font-family:'Space Grotesk',sans-serif; flex-shrink:0;">
+       <i id="setup-toggle-icon" data-lucide="chevron-down" style="width:13px;height:13px;"></i>&nbsp;<span id="setup-toggle-label">Expand</span>
+      </button>
+     </div>
+
+     <!-- Content (collapsed by default) -->
+     <div id="setup-body" style="display:none; padding:0 24px 28px;">
+
+      <!-- ── Step helper styles (inline so no external CSS needed) ── -->
+      <style>
+       .sg-step { display:flex; gap:16px; margin-bottom:22px; }
+       .sg-num  { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#059669,#0d9488); color:#fff; font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; }
+       .sg-body { flex:1; min-width:0; }
+       .sg-title{ font-size:14px; font-weight:700; color:#0f2f28; margin-bottom:6px; }
+       .sg-text { font-size:12px; color:#0d7377; line-height:1.7; }
+       .sg-text li{ margin-left:18px; margin-bottom:3px; }
+       .sg-tag  { display:inline-block; background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.3); border-radius:6px; padding:2px 8px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#047857; }
+       .sg-warn { background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.3); border-radius:8px; padding:8px 12px; font-size:11px; color:#78350f; margin-top:8px; }
+       .sg-code { background:rgba(6,20,14,0.5); border:1px solid rgba(52,211,153,0.15); border-radius:8px; padding:12px 14px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#d1fae5; line-height:1.7; overflow-x:auto; white-space:pre; margin-top:8px; }
+       .sg-table{ width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; }
+       .sg-table th{ text-align:left; color:#047857; font-weight:600; padding:4px 10px 6px; border-bottom:1px solid rgba(52,211,153,0.2); }
+       .sg-table td{ padding:5px 10px; color:#0d7377; border-bottom:1px solid rgba(52,211,153,0.08); vertical-align:top; }
+       .sg-table tr:last-child td{ border-bottom:none; }
+       .sg-divider{ height:1px; background:rgba(52,211,153,0.12); margin:4px 0 22px; }
+      </style>
+
+      <!-- Step 1 — What you need -->
+      <div class="sg-step">
+       <div class="sg-num">1</div>
+       <div class="sg-body">
+        <div class="sg-title">Gather the hardware</div>
+        <div class="sg-text">
+         <table class="sg-table">
+          <tr><th>Part</th><th>Qty</th><th>Notes</th></tr>
+          <tr><td>ESP32 dev board</td><td>1</td><td>Any 38-pin ESP32 (e.g. ESP32-WROOM-32)</td></tr>
+          <tr><td>DS18B20 temperature sensor</td><td>3</td><td>Waterproof stainless-steel probes best for outdoor use. Skip if using single-sensor mode.</td></tr>
+          <tr><td>DHT22 sensor</td><td>1</td><td>Ambient temperature + humidity (control sensor)</td></tr>
+          <tr><td>4.7 kΩ resistor</td><td>1</td><td>Pull-up for the DS18B20 data line — one resistor shared by all 3 sensors</td></tr>
+          <tr><td>Breadboard + jumper wires</td><td>—</td><td>Standard 2.54 mm pitch</td></tr>
+         </table>
+         <div class="sg-warn">💡 <strong>Only have one DHT22?</strong> That's fine — open the sketch (panel above), change <span class="sg-tag">#define SINGLE_SENSOR_MODE&nbsp;&nbsp;0</span> to <span class="sg-tag">1</span>, and skip the DS18B20 wiring entirely. The dashboard will still show three zones using small synthetic offsets.</div>
+        </div>
+       </div>
+      </div>
+      <div class="sg-divider"></div>
+
+      <!-- Step 2 — Wiring -->
+      <div class="sg-step">
+       <div class="sg-num">2</div>
+       <div class="sg-body">
+        <div class="sg-title">Wire the sensors to the ESP32</div>
+        <div class="sg-text">
+         <div class="sg-code">ESP32 3.3 V ─────┬──────────────────────────────┐
+                 │                              │
+               [4.7 kΩ]                       [DHT22]
+                 │                              │  pin 1 → 3.3 V
+ESP32 pin 5 ─────┼── DS18B20 Zone 1 (data)     │  pin 2 → ESP32 pin 4
+                 ├── DS18B20 Zone 2 (data)     │  pin 3 → n/c
+                 └── DS18B20 Zone 3 (data)     │  pin 4 → GND
+                                               │
+ESP32 GND ────────── DS18B20 × 3 (GND) ─────────── (DHT22 GND)</div>
+         <ul style="margin-top:10px; margin-left:18px; font-size:12px; color:#0d7377; line-height:1.8;">
+          <li>All three DS18B20 sensors share the same <strong>data wire (pin 5)</strong>, power, and ground. One 4.7 kΩ resistor between 3.3 V and pin 5 is all you need.</li>
+          <li>The DHT22 has four pins: power (3.3 V), data (→ pin 4), unused, and ground.</li>
+          <li>Each DS18B20 has a unique 64-bit address. When you first flash, the Serial Monitor prints each address — that tells you which physical probe maps to Zone 1, 2, or 3.</li>
+         </ul>
+        </div>
+       </div>
+      </div>
+      <div class="sg-divider"></div>
+
+      <!-- Step 3 — Arduino IDE libraries -->
+      <div class="sg-step">
+       <div class="sg-num">3</div>
+       <div class="sg-body">
+        <div class="sg-title">Install libraries in Arduino IDE</div>
+        <div class="sg-text">
+         Open <strong>Sketch → Manage Libraries…</strong> (or <strong>Sketch → Library Manager</strong>) and search for and install each library below:
+         <table class="sg-table" style="margin-top:10px;">
+          <tr><th>Library name</th><th>Author</th><th>Notes</th></tr>
+          <tr><td>ESP Async WebServer</td><td>Me-No-Dev</td><td>Also installs AsyncTCP automatically</td></tr>
+          <tr><td>DHT sensor library</td><td>Adafruit</td><td></td></tr>
+          <tr><td>Adafruit Unified Sensor</td><td>Adafruit</td><td>Required by the DHT library</td></tr>
+          <tr><td>OneWire</td><td>Jim Studt / Paul Stoffregen</td><td>Skip if using <span class="sg-tag">SINGLE_SENSOR_MODE 1</span></td></tr>
+          <tr><td>DallasTemperature</td><td>Miles Burton</td><td>Skip if using <span class="sg-tag">SINGLE_SENSOR_MODE 1</span></td></tr>
+         </table>
+        </div>
+       </div>
+      </div>
+      <div class="sg-divider"></div>
+
+      <!-- Step 4 — Add ESP32 board -->
+      <div class="sg-step">
+       <div class="sg-num">4</div>
+       <div class="sg-body">
+        <div class="sg-title">Add the ESP32 board to Arduino IDE <em style="font-size:11px; font-weight:400;">(first time only)</em></div>
+        <div class="sg-text">
+         <ol style="margin-left:18px; line-height:1.9;">
+          <li>Open <strong>File → Preferences</strong></li>
+          <li>Paste this URL into the <em>Additional Boards Manager URLs</em> field:
+           <div class="sg-code">https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json</div>
+          </li>
+          <li>Open <strong>Tools → Board → Boards Manager</strong>, search <strong>esp32</strong>, click <strong>Install</strong></li>
+          <li>Select: <strong>Tools → Board → ESP32 Arduino → ESP32 Dev Module</strong></li>
+         </ol>
+        </div>
+       </div>
+      </div>
+      <div class="sg-divider"></div>
+
+      <!-- Step 5 — Configure & Flash -->
+      <div class="sg-step">
+       <div class="sg-num">5</div>
+       <div class="sg-body">
+        <div class="sg-title">Set WiFi credentials, then flash the ESP32</div>
+        <div class="sg-text">
+         <ol style="margin-left:18px; line-height:1.9;">
+          <li>Copy the sketch from the panel above into Arduino IDE (or open <span class="sg-tag">arduino/isoclime_esp32/isoclime_esp32.ino</span>).</li>
+          <li>Find the WiFi section near the top and replace the two placeholders:
+           <div class="sg-code">const char* WIFI_SSID = "YourNetworkName";
+const char* WIFI_PASS = "YourPassword";</div>
+           <em style="font-size:11px;">Tip: create a <span class="sg-tag">secrets.h</span> file in the same folder — the sketch includes it automatically and it is listed in .gitignore.</em>
+          </li>
+          <li>Plug the ESP32 into your computer via USB.</li>
+          <li>In Arduino IDE: <strong>Tools → Port</strong> → select the port that appeared (e.g. <span class="sg-tag">COM3</span> on Windows, <span class="sg-tag">/dev/ttyUSB0</span> on Linux/Mac).</li>
+          <li>Click <strong>Upload</strong> (the → arrow). Wait for "Done uploading."</li>
+          <li>Open <strong>Tools → Serial Monitor</strong> at <strong>115200 baud</strong>. You will see:
+           <div class="sg-code">[WiFi] Connected!  IP address: 192.168.1.42
+[HTTP] Server started on port 80</div>
+           <strong>Write down the IP address</strong> — you need it in the next step.
+          </li>
+         </ol>
+        </div>
+       </div>
+      </div>
+      <div class="sg-divider"></div>
+
+      <!-- Step 6 — Connect the dashboard -->
+      <div class="sg-step" style="margin-bottom:0;">
+       <div class="sg-num">6</div>
+       <div class="sg-body">
+        <div class="sg-title">Connect this dashboard to the ESP32</div>
+        <div class="sg-text">
+         <ol style="margin-left:18px; line-height:1.9;">
+          <li>Make sure the device you are using (phone, tablet, laptop) is on the <strong>same WiFi network</strong> as the ESP32.</li>
+          <li>In the <strong>ESP32 Connection</strong> bar at the top of this page, type the IP address you noted (e.g. <span class="sg-tag">192.168.1.42</span>).</li>
+          <li>Leave transport as <strong>HTTP</strong> (or switch to <strong>WebSocket</strong> for lower latency).</li>
+          <li>Click <strong>Connect</strong>. The status badge will turn green and show <strong>LIVE</strong>.</li>
+          <li>All sensor values update in real time every 2 seconds. 🎉</li>
+         </ol>
+         <div class="sg-warn">⚠️ <strong>Mixed-content (HTTPS page + HTTP device):</strong> If this page is served over HTTPS (e.g. from GitHub Pages) and you see a "blocked: mixed-content" error, switch the transport to <strong>WebSocket</strong> — or open <span class="sg-tag">index.html</span> directly from a local file in your browser, which allows plain HTTP to local devices.</div>
+        </div>
+       </div>
+      </div>
+
+     </div><!-- /setup-body -->
+    </div>
+   </div>
+
    </main>
 
    <!-- ══ FOOTER ══ -->
@@ -1484,6 +1658,17 @@ void loop() {
 
   document.getElementById('sketch-pre').textContent = SKETCH;
 
+  function toggleSetup() {
+    const body  = document.getElementById('setup-body');
+    const icon  = document.getElementById('setup-toggle-icon');
+    const label = document.getElementById('setup-toggle-label');
+    const open  = body.style.display !== 'none';
+    body.style.display = open ? 'none' : '';
+    icon.setAttribute('data-lucide', open ? 'chevron-down' : 'chevron-up');
+    label.textContent = open ? 'Expand' : 'Collapse';
+    typeof lucide !== "undefined" && lucide.createIcons();
+  }
+
   function toggleSketch() {
     const body  = document.getElementById('sketch-body');
     const icon  = document.getElementById('sketch-toggle-icon');
@@ -1492,7 +1677,7 @@ void loop() {
     body.style.display = open ? 'none' : '';
     icon.setAttribute('data-lucide', open ? 'chevron-down' : 'chevron-up');
     label.textContent = open ? 'Expand' : 'Collapse';
-    lucide.createIcons();
+    typeof lucide !== "undefined" && lucide.createIcons();
   }
 
   function copySketch() {
@@ -1503,14 +1688,14 @@ void loop() {
       setTimeout(() => {
         btn.innerHTML = '<i data-lucide="copy" style="width:13px;height:13px;"></i>&nbsp;Copy';
         btn.style.background = '';
-        lucide.createIcons();
+        typeof lucide !== "undefined" && lucide.createIcons();
       }, 2200);
     }).catch(() => {
       btn.textContent = 'Copy failed';
       setTimeout(() => {
         btn.innerHTML = '<i data-lucide="copy" style="width:13px;height:13px;"></i>&nbsp;Copy';
         btn.style.background = '';
-        lucide.createIcons();
+        typeof lucide !== "undefined" && lucide.createIcons();
       }, 2200);
     });
   }
