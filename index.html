@@ -1,2170 +1,768 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ISOCLIME</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IsoClime Dashboard</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --clr-bg: #41c9a2;
-      --clr-surface: #ffffff;
-      --clr-accent: #0e7a50;
-      --clr-accent2: #1a6eb8;
-      --clr-text: #0c2b1e;
-      --clr-muted: #3d6b58;
-      --clr-warn: #c47a1a;
-      --clr-border: rgba(14, 122, 80, 0.2);
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body, .app-root {
+      height: 100%;
+      width: 100%;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
-      background: linear-gradient(150deg, #8be0f7 0%, #41c9a2 42%, #2aad85 100%);
-      background-attachment: fixed;
-      color: var(--clr-text);
-      font-family: 'Share Tech Mono', monospace;
-      min-height: 100vh;
+      font-family: 'Space Grotesk', sans-serif;
+      background: #f0fdfb;
+      color: #0f2f28;
       overflow-x: hidden;
     }
 
-    /* Scan-lines removed for light theme */
-    body::after { display: none; }
-
-    /* ── Pages ─────────────────────────────────────── */
-    .page { display: none; min-height: 100vh; }
-    .page.active { display: block; }
-
-    .page-container {
-      max-width: 680px;
-      margin: 0 auto;
-      padding: 1.5rem 1rem;
-      position: relative;
-      z-index: 1;
-      background: rgba(255, 255, 255, 0.88);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.13);
-      border-left: 1px solid rgba(255,255,255,0.75);
-      border-right: 1px solid rgba(255,255,255,0.75);
-    }
-
-    /* ── Glitch title ──────────────────────────────── */
-    .glitch {
-      font-family: 'Orbitron', monospace;
-      font-size: 2.8rem;
-      font-weight: 900;
-      color: var(--clr-accent);
-      position: relative;
-      display: inline-block;
-      text-shadow: 0 0 24px rgba(14, 122, 80, 0.4);
-    }
-    .glitch::before,
-    .glitch::after {
-      content: attr(data-text);
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%;
-      overflow: hidden;
-    }
-    .glitch::before {
-      color: var(--clr-accent2);
-      animation: glitch1 3s infinite;
-      clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
-    }
-    .glitch::after {
-      color: var(--clr-accent);
-      animation: glitch2 3s infinite;
-      clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
-    }
-    @keyframes glitch1 {
-      0%, 88%, 100% { transform: translate(0); }
-      90% { transform: translate(-3px, 1px); }
-      94% { transform: translate(3px, -1px); }
-    }
-    @keyframes glitch2 {
-      0%, 88%, 100% { transform: translate(0); }
-      90% { transform: translate(3px, 1px); }
-      94% { transform: translate(-3px, -1px); }
-    }
-
-    /* ── Logo bounce (idle) ────────────────────────── */
-    @keyframes logo-bounce {
-      0%,  45%, 100% { transform: translateY(0);    }
-      55%             { transform: translateY(-12px); }
-      65%             { transform: translateY(-6px);  }
-      75%             { transform: translateY(-10px); }
-      85%             { transform: translateY(-3px);  }
-    }
-    #isoclime-logo {
-      animation: logo-bounce 3.6s ease-in-out infinite;
-      transform-origin: center bottom;
-    }
-
-    /* ── Buttons ───────────────────────────────────── */
-    .btn {
-      background: transparent;
-      border: 1.5px solid var(--clr-accent);
-      color: var(--clr-accent);
-      font-family: 'Orbitron', monospace;
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.15em;
-      padding: 0.75rem 2rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-transform: uppercase;
-    }
-    .btn:hover {
-      background: rgba(14, 122, 80, 0.09);
-      box-shadow: 0 0 18px rgba(14, 122, 80, 0.22);
-    }
-    .btn:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-    .btn-primary {
-      background: var(--clr-accent);
-      color: #ffffff;
-      border-color: var(--clr-accent);
-    }
-    .btn-primary:hover:not(:disabled) {
-      background: var(--clr-accent);
-      box-shadow: 0 0 30px rgba(14, 122, 80, 0.45);
-    }
-    .btn-partner {
-      border-color: var(--clr-accent2);
-      color: var(--clr-accent2);
-      font-size: 0.62rem;
-      padding: 0.4rem 0.9rem;
-      letter-spacing: 0.13em;
-    }
-    .btn-partner:hover {
-      background: rgba(26, 110, 184, 0.09);
-      box-shadow: 0 0 18px rgba(26, 110, 184, 0.22);
-    }
-
-    /* ── Cards ─────────────────────────────────────── */
-    .card {
-      background: var(--clr-surface);
-      border: 1px solid var(--clr-border);
-      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-      padding: 1.25rem 1.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .result-card {
-      background: var(--clr-surface);
-      border: 1px solid var(--clr-border);
-      border-left: 3px solid var(--clr-muted);
-      box-shadow: 0 1px 6px rgba(0,0,0,0.05);
-      padding: 1rem 1.25rem;
-      margin-bottom: 0.75rem;
-    }
-    .result-card.priority-high {
-      border-left-color: var(--clr-accent2);
-      background: rgba(26, 110, 184, 0.05);
-    }
-    .result-card.priority-med {
-      border-left-color: var(--clr-warn);
-      background: rgba(196, 122, 26, 0.05);
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .fade-in {
-      animation: fadeIn 0.4s ease forwards;
-      opacity: 0;
-    }
-
-    /* ── Progress steps ────────────────────────────── */
-    .steps-bar {
-      display: flex;
-      gap: 4px;
-      margin-bottom: 2rem;
-    }
-    .step-dot {
-      height: 3px;
-      flex: 1;
-      background: var(--clr-border);
-      transition: background 0.3s;
-    }
-    .step-dot.active {
-      background: var(--clr-accent);
-      box-shadow: 0 0 8px rgba(14, 122, 80, 0.4);
-    }
-    .step-dot.completed {
-      background: rgba(14, 122, 80, 0.3);
-    }
-
-    /* ── Score ring ────────────────────────────────── */
-    .score-ring-wrapper {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin: 1.5rem 0;
-      position: relative;
-    }
-    .score-ring-wrapper svg {
-      transform: rotate(-90deg);
-    }
-    .score-bg-circle {
-      fill: none;
-      stroke: var(--clr-border);
-      stroke-width: 6;
-    }
-    #score-circle {
-      fill: none;
-      stroke: var(--clr-accent);
-      stroke-width: 6;
-      stroke-dasharray: 239;
-      stroke-dashoffset: 239;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 1.2s ease, stroke 0.5s ease;
-    }
-    .score-number-overlay {
-      position: absolute;
-      text-align: center;
-    }
-
-    /* ── Leaflet map ────────────────────────────────── */
-    #leaflet-map {
-      height: 320px;
-      border: 1px solid var(--clr-border);
-      margin-bottom: 1rem;
-      z-index: 1;
-    }
-    /* Light-theme overrides for Leaflet UI widgets */
-    .leaflet-bar a {
-      background: var(--clr-surface) !important;
-      color: var(--clr-accent) !important;
-      border-color: var(--clr-border) !important;
-    }
-    .leaflet-bar a:hover { background: rgba(14, 122, 80, 0.08) !important; }
-    .leaflet-popup-content-wrapper {
-      background: var(--clr-surface);
-      border: 1px solid var(--clr-accent);
-      color: var(--clr-text);
-      border-radius: 0;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.78rem;
-    }
-    .leaflet-popup-tip { background: var(--clr-surface); }
-    .leaflet-popup-close-button { color: var(--clr-muted) !important; }
-    .leaflet-attribution-flag { display: none !important; }
-
-    /* ── Autocomplete dropdown ──────────────────────── */
-    .search-wrapper { position: relative; margin-bottom: 1rem; }
-    #zone-suggestions {
-      display: none;
-      position: absolute;
-      top: 100%;
-      left: 0; right: 0;
-      background: var(--clr-surface);
-      border: 1px solid var(--clr-accent);
-      border-top: none;
-      max-height: 200px;
+    .app-root {
       overflow-y: auto;
-      z-index: 1000;
-    }
-    .suggestion-item {
-      padding: 0.55rem 1rem;
-      font-size: 0.82rem;
-      color: var(--clr-muted);
-      cursor: pointer;
-      border-bottom: 1px solid var(--clr-border);
-      transition: background 0.15s;
-    }
-    .suggestion-item:last-child { border-bottom: none; }
-    .suggestion-item:hover, .suggestion-item.active {
-      background: rgba(14, 122, 80, 0.08);
-      color: var(--clr-accent);
+      overflow-x: hidden;
     }
 
-    .leaflet-tooltip.leaflet-tooltip-dark {
-      background: var(--clr-surface);
-      border: 1px solid var(--clr-accent);
-      color: var(--clr-accent);
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.72rem;
-      border-radius: 0;
-      padding: 3px 8px;
-      white-space: nowrap;
-    }
-    .leaflet-tooltip.leaflet-tooltip-dark::before { border-top-color: var(--clr-accent); }
-
-    #map-selected-zone {
-      display: none;
-      background: rgba(14, 122, 80, 0.08);
-      border: 1px solid var(--clr-accent);
-      color: var(--clr-accent);
-      font-family: 'Orbitron', monospace;
-      font-size: 0.65rem;
-      letter-spacing: 0.15em;
-      padding: 0.4rem 0.9rem;
-      text-align: center;
-      margin-bottom: 1rem;
+    /* Background */
+    .bg-mesh {
+      background:
+        radial-gradient(ellipse at 10% 20%, rgba(52, 211, 153, 0.06) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 10%, rgba(6, 182, 212, 0.04) 0%, transparent 45%),
+        radial-gradient(ellipse at 50% 90%, rgba(16, 122, 80, 0.03) 0%, transparent 50%),
+        #f0fdfb;
     }
 
-    /* ── Text input ────────────────────────────────── */
-    .text-input {
-      background: var(--clr-surface);
-      border: 1px solid var(--clr-border);
-      color: var(--clr-text);
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.88rem;
-      padding: 0.75rem 1rem;
-      width: 100%;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .text-input:focus {
-      border-color: var(--clr-accent);
-      box-shadow: 0 0 10px rgba(14, 122, 80, 0.15);
-    }
-    .text-input::placeholder { color: var(--clr-muted); }
-
-    /* ── Answer options ─────────────────────────────── */
-    .options-grid { display: grid; gap: 0.5rem; }
-
-    .option-item {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      background: var(--clr-surface);
-      border: 1px solid var(--clr-border);
-      padding: 0.75rem 1rem;
-      cursor: pointer;
-      transition: all 0.18s;
-      user-select: none;
-    }
-    .option-item:hover {
-      border-color: var(--clr-accent);
-      background: rgba(14, 122, 80, 0.04);
-    }
-    .option-item.selected {
-      border-color: var(--clr-accent);
-      background: rgba(14, 122, 80, 0.08);
-    }
-    .option-item input[type="radio"],
-    .option-item input[type="checkbox"] {
-      accent-color: var(--clr-accent);
-      width: 14px;
-      height: 14px;
-      flex-shrink: 0;
+    /* Glass cards */
+    .glass {
+      background: rgba(255,255,255,0.85);
+      border: 1px solid rgba(52, 211, 153, 0.2);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
     }
 
-    /* ── Sensor grid ───────────────────────────────── */
-    #sensor-data-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1rem;
+    .glass-strong {
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(52, 211, 153, 0.25);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
     }
 
-    /* ── Misc ──────────────────────────────────────── */
-    .divider {
-      border: none;
-      border-top: 1px solid var(--clr-border);
-      margin: 1.5rem 0;
-    }
-    .label {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.6rem;
-      font-weight: 700;
-      letter-spacing: 0.15em;
-      color: var(--clr-muted);
-      text-transform: uppercase;
-      margin-bottom: 0.5rem;
-    }
-    .section-heading {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.62rem;
-      font-weight: 700;
-      letter-spacing: 0.2em;
-      color: var(--clr-muted);
-      border-bottom: 1px solid var(--clr-border);
-      padding-bottom: 0.5rem;
-      margin-bottom: 1rem;
-    }
-    .q-nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 1.5rem;
-      gap: 1rem;
+    /* Glow */
+    .glow-green { box-shadow: 0 0 28px rgba(52, 211, 153, 0.08), 0 2px 16px rgba(0,0,0,0.06); }
+    .glow-teal  { box-shadow: 0 0 28px rgba(6, 182, 212, 0.08), 0 2px 16px rgba(0,0,0,0.06); }
+    .text-glow  { text-shadow: 0 0 20px rgba(52,211,153,0.25); }
+
+    /* Gradient text */
+    .gradient-text {
+      background: linear-gradient(135deg, #059669 0%, #0d9488 50%, #0891b2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.3); }
-    ::-webkit-scrollbar-thumb { background: rgba(14,122,80,0.3); }
-
-    /* ── Home CTA row ──────────────────────────────── */
-    .cta-row { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
-
-    /* ── Result action row ─────────────────────────── */
-    .result-action-row { display: flex; gap: 0.75rem; padding: 0.5rem 0 1.5rem; }
-    .result-action-row .btn { flex: 1; }
-
-    /* ── Section heading with top spacing ──────────── */
-    .section-heading-spaced {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.62rem;
-      font-weight: 700;
-      letter-spacing: 0.2em;
-      color: var(--clr-muted);
-      border-bottom: 1px solid var(--clr-border);
-      padding-bottom: 0.5rem;
-      margin-bottom: 1rem;
-      margin-top: 1.5rem;
+    /* Pulse dot */
+    .pulse-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #16a34a;
+      box-shadow: 0 0 8px #16a34a;
+      animation: pulse-anim 1.8s ease-in-out infinite;
+      display: inline-block;
+    }
+    @keyframes pulse-anim {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.5); }
     }
 
-    /* ── Risk bar chart ────────────────────────────── */
-    .bar-chart { display: flex; flex-direction: column; gap: 0.6rem; }
-    .bar-row { display: flex; align-items: center; gap: 0.75rem; }
-    .bar-label {
-      font-size: 0.62rem;
-      color: var(--clr-muted);
-      letter-spacing: 0.06em;
-      width: 130px;
-      flex-shrink: 0;
-      text-align: right;
+    /* Mini spark line via SVG */
+    .spark-path { stroke-dasharray: 200; stroke-dashoffset: 200; animation: draw 2s ease forwards; }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+
+    /* Gauge */
+    .gauge-track { stroke: rgba(52,211,153,0.2); }
+    .gauge-fill  { stroke: url(#gaugeGrad); stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+
+    /* Bar chart bars */
+    .bar-fill { transform-origin: bottom; animation: growUp 1.2s cubic-bezier(.22,1,.36,1) forwards; }
+    @keyframes growUp {
+      from { transform: scaleY(0); opacity: 0; }
+      to   { transform: scaleY(1); opacity: 1; }
     }
-    .bar-track {
-      flex: 1;
-      height: 8px;
-      background: var(--clr-border);
+
+    /* Zone map circles */
+    .zone-circle {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; font-weight: 600;
+      border: 2px solid;
       position: relative;
-      overflow: hidden;
+      transition: transform 0.2s;
     }
-    .bar-fill {
-      position: absolute;
-      top: 0; left: 0;
-      height: 100%;
-      width: 0%;
-      transition: width 1s ease;
-    }
-    .bar-value {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.62rem;
-      font-weight: 700;
-      width: 30px;
-      text-align: right;
-      flex-shrink: 0;
-    }
-
-    /* ── Learn page ────────────────────────────────── */
-    #page-learn { position: relative; }
-    .learn-card {
-      background: var(--clr-surface);
-      border: 1px solid var(--clr-border);
-      border-left: 3px solid var(--clr-accent);
-      padding: 1.1rem 1.4rem;
-      margin-bottom: 1rem;
-    }
-    .learn-card h3 {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: var(--clr-accent);
-      letter-spacing: 0.15em;
-      margin-bottom: 0.5rem;
-    }
-    .learn-card.learn-accent2 { border-left-color: var(--clr-accent2); }
-    .learn-card.learn-accent2 h3 { color: var(--clr-accent2); }
-    .learn-card.learn-warn { border-left-color: var(--clr-warn); }
-    .learn-card.learn-warn h3 { color: var(--clr-warn); }
-    .learn-card.learn-warn .learn-stat-value { color: var(--clr-warn); }
-    .learn-card p {
-      font-size: 0.79rem;
-      color: var(--clr-muted);
-      line-height: 1.75;
-    }
-    .learn-stat-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.75rem;
-      margin-top: 0.75rem;
-    }
-    .learn-stat {
-      background: rgba(14, 122, 80, 0.06);
-      border: 1px solid var(--clr-border);
-      padding: 0.7rem 0.9rem;
-      text-align: center;
-    }
-    .learn-stat-value {
-      font-family: 'Orbitron', monospace;
-      font-size: 1.1rem;
-      font-weight: 900;
-      color: var(--clr-accent);
-      display: block;
-    }
-    .learn-stat-label {
-      font-size: 0.58rem;
-      color: var(--clr-muted);
-      letter-spacing: 0.1em;
-      margin-top: 3px;
-      display: block;
-    }
-
-    /* ── Compare mode ──────────────────────────────── */
-    .compare-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
-    .compare-cell {
-      background: var(--clr-surface);
-      border: 1px solid var(--clr-border);
-      padding: 0.9rem 1rem;
-      text-align: center;
-    }
-    .compare-cell .zone-name {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.6rem;
-      font-weight: 700;
-      color: var(--clr-accent);
-      letter-spacing: 0.1em;
-      margin-bottom: 0.5rem;
-      word-break: break-word;
-    }
-    .compare-cell .zone-score {
-      font-family: 'Orbitron', monospace;
-      font-size: 1.6rem;
-      font-weight: 900;
-    }
-
-    /* ── Print ─────────────────────────────────────── */
-    @media print {
-      body::after { display: none; }
-      .btn, #cloud-layer, .metal-layer, #leaflet-map { display: none !important; }
-      .page { display: none !important; }
-      #page-results { display: block !important; }
-      body { background: #fff !important; color: #000 !important; }
-      .card, .result-card, .learn-card { border-color: #ccc !important; background: #fff !important; box-shadow: none !important; }
-      .page-container { background: #fff !important; box-shadow: none !important; backdrop-filter: none !important; }
-      :root {
-        --clr-bg: #fff;
-        --clr-surface: #fff;
-        --clr-text: #000;
-        --clr-muted: #555;
-        --clr-accent: #0e7a50;
-        --clr-accent2: #1a6eb8;
-        --clr-warn: #c47a1a;
-        --clr-border: #ccc;
-      }
-    }
-
-    /* ── Cloud background (all pages) ──────────────── */
-    #page-home { position: relative; overflow: hidden; }
-    /* ── Shared page positioning + decoration layer ── */
-    #page-map, #page-questions, #page-results, #page-learn { position: relative; overflow: hidden; }
-    .metal-layer {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-    }
-    .deco { position: absolute; opacity: 0.75; }
-    @keyframes metal-float {
-      0%, 100% { transform: translateY(0px) rotate(0deg); }
-      40%       { transform: translateY(-9px) rotate(3deg); }
-      70%       { transform: translateY(5px) rotate(-2deg); }
-    }
-    @keyframes metal-float2 {
-      0%, 100% { transform: translateY(0px) rotate(0deg); }
-      35%       { transform: translateY(7px) rotate(-3deg); }
-      65%       { transform: translateY(-6px) rotate(2deg); }
-    }
-    .deco-a { animation: metal-float  7s ease-in-out infinite; }
-    .deco-b { animation: metal-float2 9s ease-in-out 1.5s infinite; }
-    .deco-c { animation: metal-float 11s ease-in-out 3.5s infinite; }
-    #cloud-layer {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-    }
-    .cloud {
-      position: absolute;
-      background: rgba(255, 255, 255, 0.32);
-      border-radius: 60px;
-      filter: blur(8px);
-    }
-    .cloud::before,
-    .cloud::after {
+    .zone-circle:hover { transform: scale(1.07); }
+    .zone-circle::after {
       content: '';
       position: absolute;
-      background: rgba(255, 255, 255, 0.32);
+      inset: -6px;
       border-radius: 50%;
+      border: 1px dashed;
+      opacity: 0.35;
+      animation: spin-slow 12s linear infinite;
     }
-    .cloud::before {
-      width: 55%; height: 145%;
-      top: -48%; left: 14%;
+    @keyframes spin-slow { to { transform: rotate(360deg); } }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(16, 163, 127, 0.3); border-radius: 99px; }
+
+    /* Card fade-in */
+    .card-enter { animation: fadeUp 0.6s ease both; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
-    .cloud::after {
-      width: 42%; height: 125%;
-      top: -32%; right: 13%;
+
+    /* Chart line */
+    .chart-svg path { animation: drawLine 2.5s ease forwards; }
+    .chart-svg .line1 { stroke-dasharray: 600; stroke-dashoffset: 600; }
+    .chart-svg .line2 { stroke-dasharray: 600; stroke-dashoffset: 600; animation-delay: 0.3s; }
+    .chart-svg .line3 { stroke-dasharray: 600; stroke-dashoffset: 600; animation-delay: 0.6s; }
+    @keyframes drawLine { to { stroke-dashoffset: 0; } }
+
+    /* Heat badge */
+    .heat-badge {
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
     }
-    @keyframes cloud-drift {
-      from { transform: translateX(-420px); opacity: 0; }
-      8%   { opacity: 1; }
-      92%  { opacity: 1; }
-      to   { transform: translateX(calc(100vw + 420px)); opacity: 0; }
-    }
-    .cloud-1 { width: 280px; height: 72px;  top:  6%; animation: cloud-drift 62s linear  0s  infinite; }
-    .cloud-2 { width: 200px; height: 54px;  top: 21%; animation: cloud-drift 78s linear 14s  infinite; }
-    .cloud-3 { width: 360px; height: 88px;  top: 39%; animation: cloud-drift 50s linear  8s  infinite; }
-    .cloud-4 { width: 155px; height: 44px;  top: 59%; animation: cloud-drift 70s linear 30s  infinite; }
-    .cloud-5 { width: 245px; height: 66px;  top: 73%; animation: cloud-drift 57s linear 22s  infinite; }
-    .cloud-6 { width: 215px; height: 58px;  top: 13%; animation: cloud-drift 88s linear 44s  infinite; }
+
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Logo leaf SVG colour */
+    .logo-leaf { fill: #16a34a; }
   </style>
-</head>
-<body>
-
-<!-- Cloud layer fixed across all pages -->
-<div id="cloud-layer" aria-hidden="true">
-  <div class="cloud cloud-1"></div>
-  <div class="cloud cloud-2"></div>
-  <div class="cloud cloud-3"></div>
-  <div class="cloud cloud-4"></div>
-  <div class="cloud cloud-5"></div>
-  <div class="cloud cloud-6"></div>
-</div>
-
-<!-- ========================================================
-     HOME PAGE
-     ======================================================== -->
-<div id="page-home" class="page active">
-  <div class="metal-layer" aria-hidden="true">
-    <!-- asterisk top-right -->
-    <div class="deco deco-a" style="top:6%;right:3%;">
-      <svg viewBox="0 0 60 60" width="72" height="72">
-        <defs>
-          <linearGradient id="g-hm-ast" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#666"/><stop offset="30%" stop-color="#f0f0f0"/>
-            <stop offset="65%" stop-color="#aaa"/><stop offset="100%" stop-color="#444"/>
-          </linearGradient>
-        </defs>
-        <g stroke="url(#g-hm-ast)" stroke-width="5" stroke-linecap="round" transform="translate(30,30)">
-          <line x1="0" y1="-22" x2="0" y2="22"/>
-          <line x1="-22" y1="0" x2="22" y2="0"/>
-          <line x1="-15.6" y1="-15.6" x2="15.6" y2="15.6"/>
-          <line x1="15.6" y1="-15.6" x2="-15.6" y2="15.6"/>
-        </g>
-      </svg>
-    </div>
-    <!-- sphere left-center -->
-    <div class="deco deco-b" style="top:44%;left:2%;">
-      <svg viewBox="0 0 60 60" width="58" height="58">
-        <defs>
-          <radialGradient id="g-hm-sph" cx="21" cy="17" r="40" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#ffffff"/>
-            <stop offset="35%" stop-color="#cccccc"/>
-            <stop offset="70%" stop-color="#555555"/>
-            <stop offset="100%" stop-color="#181818"/>
-          </radialGradient>
-        </defs>
-        <circle cx="30" cy="30" r="27" fill="url(#g-hm-sph)"/>
-      </svg>
-    </div>
-    <!-- squiggle bottom-right -->
-    <div class="deco deco-c" style="bottom:8%;right:2%;">
-      <svg viewBox="0 0 70 115" width="56" height="92">
-        <defs>
-          <linearGradient id="g-hm-sqg" x1="0" y1="0" x2="70" y2="115" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#777"/><stop offset="25%" stop-color="#fff"/>
-            <stop offset="55%" stop-color="#999"/><stop offset="80%" stop-color="#ddd"/>
-            <stop offset="100%" stop-color="#555"/>
-          </linearGradient>
-        </defs>
-        <path d="M35,8 C65,8 65,50 35,57 C5,64 5,100 35,107"
-              fill="none" stroke="url(#g-hm-sqg)" stroke-width="13" stroke-linecap="round"/>
-      </svg>
-    </div>
-  </div>
-  <div class="page-container">
-    <div style="display:flex;justify-content:flex-end;padding:0.6rem 0 0;">
-      <button class="btn btn-partner" onclick="showPage('page-partner')">◈ PARTNER WITH ISOCLIME</button>
-    </div>
-    <div style="text-align:center;padding:3rem 1rem 2rem;">
-      <img src="https://github.com/user-attachments/assets/46534d7f-bff1-44be-88f2-96c4ddc26e05"
-           id="isoclime-logo"
-           alt="IsoClime"
-           style="max-width:420px;width:90%;height:auto;margin-bottom:0.25rem;"
-           onerror="this.style.display='none';document.getElementById('isoclime-title').style.display='inline-block';" />
-      <h1 class="glitch" id="isoclime-title" data-text="ISOCLIME" style="display:none;margin-bottom:0.25rem;">ISOCLIME</h1>
-      <p id="tagline-text" style="font-family:'VT323',monospace;font-size:1.4rem;color:var(--clr-muted);letter-spacing:0.28em;margin:0.6rem 0 2rem;">DETECT. DEFLECT. PROTECT.</p>
-      <p style="color:var(--clr-muted);font-size:0.8rem;max-width:420px;margin:0 auto 2.5rem;line-height:1.8;">
-        AI-powered microclimate analysis for your neighborhood. Identify heat stress, humidity risk, and get actionable solutions.
-      </p>
-      <div class="cta-row">
-        <button class="btn btn-primary" id="cta-btn" onclick="showPage('page-map')">▶ SEARCH YOUR ZONE</button>
-        <button class="btn" onclick="showPage('page-learn')">◈ CLIMATE SCIENCE</button>
-      </div>
-    </div>
-
-    <hr class="divider" />
-
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;text-align:center;padding:1rem 0 2rem;">
-      <div>
-        <div id="zones-count" style="font-family:'Orbitron',monospace;font-size:1.5rem;font-weight:900;color:var(--clr-accent);">—</div>
-        <div style="font-size:0.62rem;color:var(--clr-muted);letter-spacing:0.1em;margin-top:4px;">ZONES MAPPED</div>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="bg-mesh">
+  <div class="app-root">
+   <!-- ═══════════════════ HEADER ═══════════════════ -->
+   <header style="padding: 22px 32px 0; max-width: 1400px; margin: 0 auto 0;">
+    <div class="glass-strong glow-green" style="border-radius: 18px; padding: 18px 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+     <!-- Logo + Title -->
+     <div style="display: flex; align-items: center; gap: 16px;">
+      <!-- Leaf / wave logo SVG -->
+      <div style="width:46px; height:46px; background: linear-gradient(135deg,#064e3b,#065f46); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow: 0 0 18px rgba(52,211,153,0.3);">
+       <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M13 3C13 3 4 8.5 4 15.5C4 20.19 8.03 24 13 24C17.97 24 22 20.19 22 15.5C22 8.5 13 3 13 3Z" fill="#34d399" opacity="0.9" />
+        <path d="M13 24V12" stroke="#064e3b" stroke-width="1.8" stroke-linecap="round" />
+        <path d="M13 17C13 17 9 14 7 11" stroke="#064e3b" stroke-width="1.4" stroke-linecap="round" opacity="0.7" />
+       </svg>
       </div>
       <div>
-        <div style="font-family:'Orbitron',monospace;font-size:1.5rem;font-weight:900;color:var(--clr-accent2);" id="households-count">0</div>
-        <div style="font-size:0.62rem;color:var(--clr-muted);letter-spacing:0.1em;margin-top:4px;">HOUSEHOLDS</div>
+       <div style="font-size:22px; font-weight:700; letter-spacing:-0.02em;" class="gradient-text text-glow" id="logo-name">
+        IsoClime
+       </div>
+       <div id="dashboard-title" style="font-size:13px; font-weight:500; color:#047857; letter-spacing:0.04em; margin-top:1px;">
+        Live Microclimate Sensor Network
+       </div>
+      </div>
+     </div>
+     <!-- Subtitle + status -->
+     <div style="display: flex; align-items: center; gap: 22px; flex-wrap: wrap;">
+      <div id="dashboard-subtitle" style="font-size:12px; color:#0d9488; opacity:0.75; letter-spacing:0.06em; text-transform:uppercase;">
+       Real-time environmental monitoring
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.3); border-radius:99px; padding:6px 14px;">
+       <span class="pulse-dot"></span>
+       <span style="font-size:12px; font-weight:600; color:#047857; font-family:'JetBrains Mono',monospace;">LIVE</span>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#0d7377; opacity:0.8;" id="live-time">
+       --:--:--
+      </div>
+     </div>
+    </div>
+   </header>
+
+   <!-- ═══════════════════ MAIN GRID ═══════════════════ -->
+   <main style="padding: 22px 32px 28px; max-width: 1400px; margin: 0 auto;">
+
+    <!-- ROW 1: Zone cards + Control card -->
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr) 1.15fr; gap: 18px; margin-bottom: 18px;">
+
+     <!-- Zone 1 -->
+     <div class="glass glow-green card-enter" style="border-radius:16px; padding:22px; animation-delay:0.05s; position:relative; overflow:hidden;">
+      <div style="position:absolute; top:-30px; right:-30px; width:100px; height:100px; border-radius:50%; background:rgba(52,211,153,0.04); pointer-events:none;"></div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+       <div>
+        <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:#0d7377; opacity:0.8; font-weight:600;">Zone 1</div>
+        <div id="z1-label" style="font-size:13px; font-weight:600; color:#047857; margin-top:2px;">Urban Road</div>
+       </div>
+       <div style="width:36px; height:36px; background:rgba(52,211,153,0.15); border:1px solid rgba(52,211,153,0.3); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+        <i data-lucide="thermometer" style="width:18px;height:18px;color:#10a060;"></i>
+       </div>
+      </div>
+      <div style="font-size:42px; font-weight:700; letter-spacing:-0.03em; color:#0f2f28; line-height:1;" class="mono text-glow">
+       29.4<span style="font-size:20px; color:#34d399;">°C</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px; margin-top:8px; margin-bottom:14px;">
+       <span class="heat-badge" style="background:rgba(239,68,68,0.12); color:#dc2626; border:1px solid rgba(239,68,68,0.25);">HIGH</span>
+       <span style="font-size:11px; color:#0d7377; opacity:0.8; font-family:'JetBrains Mono',monospace;">▲ +1.2°C / hr</span>
+      </div>
+      <!-- Sparkline -->
+      <svg width="100%" height="40" viewBox="0 0 160 40" preserveAspectRatio="none" style="overflow:visible;">
+       <defs>
+        <linearGradient id="sg1" x1="0" y1="0" x2="0" y2="1">
+         <stop offset="0%" stop-color="#34d399" stop-opacity="0.3" />
+         <stop offset="100%" stop-color="#34d399" stop-opacity="0" />
+        </linearGradient>
+       </defs>
+       <path d="M0,32 L20,28 L40,30 L60,22 L80,25 L100,18 L120,20 L140,14 L160,12" stroke="#34d399" stroke-width="2" fill="none" class="spark-path" />
+       <path d="M0,32 L20,28 L40,30 L60,22 L80,25 L100,18 L120,20 L140,14 L160,12 L160,40 L0,40Z" fill="url(#sg1)" />
+      </svg>
+     </div>
+
+     <!-- Zone 2 -->
+     <div class="glass glow-teal card-enter" style="border-radius:16px; padding:22px; animation-delay:0.12s; position:relative; overflow:hidden;">
+      <div style="position:absolute; top:-30px; right:-30px; width:100px; height:100px; border-radius:50%; background:rgba(20,184,166,0.04); pointer-events:none;"></div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+       <div>
+        <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:#0d7377; opacity:0.8; font-weight:600;">Zone 2</div>
+        <div id="z2-label" style="font-size:13px; font-weight:600; color:#047857; margin-top:2px;">Aluminum Roof Houses</div>
+       </div>
+       <div style="width:36px; height:36px; background:rgba(20,184,166,0.12); border:1px solid rgba(20,184,166,0.25); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+        <i data-lucide="thermometer" style="width:18px;height:18px;color:#14b8a6;"></i>
+       </div>
+      </div>
+      <div style="font-size:42px; font-weight:700; letter-spacing:-0.03em; color:#0f2f28; line-height:1;" class="mono text-glow">
+       31.8<span style="font-size:20px; color:#14b8a6;">°C</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px; margin-top:8px; margin-bottom:14px;">
+       <span class="heat-badge" style="background:rgba(239,68,68,0.18); color:#f87171; border:1px solid rgba(239,68,68,0.3);">ELEVATED</span>
+       <span style="font-size:11px; color:#0d7377; opacity:0.8; font-family:'JetBrains Mono',monospace;">▲ +2.1°C / hr</span>
+      </div>
+      <svg width="100%" height="40" viewBox="0 0 160 40" preserveAspectRatio="none" style="overflow:visible;">
+       <defs>
+        <linearGradient id="sg2" x1="0" y1="0" x2="0" y2="1">
+         <stop offset="0%" stop-color="#14b8a6" stop-opacity="0.3" />
+         <stop offset="100%" stop-color="#14b8a6" stop-opacity="0" />
+        </linearGradient>
+       </defs>
+       <path d="M0,30 L20,26 L40,28 L60,20 L80,16 L100,12 L120,10 L140,8 L160,6" stroke="#14b8a6" stroke-width="2" fill="none" class="spark-path" style="animation-delay:0.3s;" />
+       <path d="M0,30 L20,26 L40,28 L60,20 L80,16 L100,12 L120,10 L140,8 L160,6 L160,40 L0,40Z" fill="url(#sg2)" />
+      </svg>
+     </div>
+
+     <!-- Zone 3 -->
+     <div class="glass card-enter" style="border-radius:16px; padding:22px; animation-delay:0.19s; position:relative; overflow:hidden; border-color:rgba(6,182,212,0.18);">
+      <div style="position:absolute; top:-30px; right:-30px; width:100px; height:100px; border-radius:50%; background:rgba(6,182,212,0.06); pointer-events:none;"></div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+       <div>
+        <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:#0d7377; opacity:0.8; font-weight:600;">Zone 3</div>
+        <div id="z3-label" style="font-size:13px; font-weight:600; color:#047857; margin-top:2px;">Tree-Covered Area</div>
+       </div>
+       <div style="width:36px; height:36px; background:rgba(6,182,212,0.12); border:1px solid rgba(6,182,212,0.25); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+        <i data-lucide="thermometer" style="width:18px;height:18px;color:#06b6d4;"></i>
+       </div>
+      </div>
+      <div style="font-size:42px; font-weight:700; letter-spacing:-0.03em; color:#0f2f28; line-height:1;" class="mono text-glow">
+       26.1<span style="font-size:20px; color:#06b6d4;">°C</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px; margin-top:8px; margin-bottom:14px;">
+       <span class="heat-badge" style="background:rgba(52,211,153,0.12); color:#86efac; border:1px solid rgba(52,211,153,0.25);">COOL</span>
+       <span style="font-size:11px; color:#0d7377; opacity:0.8; font-family:'JetBrains Mono',monospace;">▼ −0.4°C / hr</span>
+      </div>
+      <svg width="100%" height="40" viewBox="0 0 160 40" preserveAspectRatio="none" style="overflow:visible;">
+       <defs>
+        <linearGradient id="sg3" x1="0" y1="0" x2="0" y2="1">
+         <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.3" />
+         <stop offset="100%" stop-color="#06b6d4" stop-opacity="0" />
+        </linearGradient>
+       </defs>
+       <path d="M0,18 L20,22 L40,20 L60,24 L80,22 L100,26 L120,24 L140,28 L160,30" stroke="#06b6d4" stroke-width="2" fill="none" class="spark-path" style="animation-delay:0.6s;" />
+       <path d="M0,18 L20,22 L40,20 L60,24 L80,22 L100,26 L120,24 L140,28 L160,30 L160,40 L0,40Z" fill="url(#sg3)" />
+      </svg>
+     </div>
+
+     <!-- DHT22 Control card -->
+     <div class="glass-strong glow-green card-enter" style="border-radius:16px; padding:22px; animation-delay:0.26s;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:18px;">
+       <div style="width:34px;height:34px;background:linear-gradient(135deg,#065f46,#047857);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <i data-lucide="cpu" style="width:16px;height:16px;color:#34d399;"></i>
+       </div>
+       <div>
+        <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:#0d9488; opacity:0.9; font-weight:600;">Control Sensor</div>
+        <div style="font-size:13px; font-weight:600; color:#047857;">Ambient Conditions</div>
+       </div>
+      </div>
+      <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.12em; color:#0d9488; opacity:0.8; margin-bottom:6px;">DHT22 Sensor Node</div>
+      <!-- Temp row -->
+      <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(52,211,153,0.06); border:1px solid rgba(52,211,153,0.12); border-radius:10px; padding:10px 14px; margin-bottom:10px;">
+       <div style="display:flex; align-items:center; gap:8px;">
+        <i data-lucide="flame" style="width:15px;height:15px;color:#34d399;"></i>
+        <span style="font-size:12px; color:#0d9488; font-weight:500;">Temperature</span>
+       </div>
+       <span style="font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; color:#0f2f28;">28.7<span style="font-size:13px; color:#34d399;">°C</span></span>
+      </div>
+      <!-- Humidity row -->
+      <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(20,184,166,0.06); border:1px solid rgba(20,184,166,0.12); border-radius:10px; padding:10px 14px; margin-bottom:14px;">
+       <div style="display:flex; align-items:center; gap:8px;">
+        <i data-lucide="droplets" style="width:15px;height:15px;color:#14b8a6;"></i>
+        <span style="font-size:12px; color:#0d8084; font-weight:500;">Humidity</span>
+       </div>
+       <span style="font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; color:#0f2f28;">76<span style="font-size:13px; color:#14b8a6;">%</span></span>
+      </div>
+      <!-- Humidity bar -->
+      <div>
+       <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+        <span style="font-size:10px; color:#0d9488; opacity:0.8;">Relative Humidity</span>
+        <span style="font-size:10px; color:#0d7377; font-family:'JetBrains Mono',monospace; font-weight:600;">76%</span>
+       </div>
+       <div style="height:6px; border-radius:99px; background:rgba(20,184,166,0.12); overflow:hidden;">
+        <div style="height:100%; width:76%; background:linear-gradient(90deg,#14b8a6,#06b6d4); border-radius:99px; transition:width 1s ease;"></div>
+       </div>
+      </div>
+      <!-- ESP32 badge -->
+      <div style="margin-top:14px; display:flex; align-items:center; gap:7px; opacity:0.7;">
+       <i data-lucide="wifi" style="width:12px;height:12px;color:#34d399;"></i>
+       <span style="font-size:10px; color:#0d7377; font-family:'JetBrains Mono',monospace; letter-spacing:0.08em;">ESP32 · NODE_001 · CONNECTED</span>
+      </div>
+     </div>
+
+    </div>
+
+    <!-- ROW 2: Main chart + Humidity gauge + Bar chart -->
+    <div style="display: grid; grid-template-columns: 1fr 0.55fr 0.55fr; gap: 18px; margin-bottom: 18px;">
+
+     <!-- Multi-zone line chart -->
+     <div class="glass-strong glow-green card-enter" style="border-radius:16px; padding:24px; animation-delay:0.3s;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+       <div>
+        <div style="font-size:15px; font-weight:700; color:#0f2f28;">Temperature Over Time</div>
+        <div style="font-size:11px; color:#0d7377; opacity:0.8; margin-top:2px;">All zones — last 12 readings</div>
+       </div>
+       <!-- Legend -->
+       <div style="display:flex; gap:14px;">
+        <div style="display:flex; align-items:center; gap:5px;">
+         <div style="width:18px;height:3px;border-radius:2px;background:#34d399;"></div><span style="font-size:11px;color:#0d7377;">Z1</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:5px;">
+         <div style="width:18px;height:3px;border-radius:2px;background:#14b8a6;"></div><span style="font-size:11px;color:#0d7377;">Z2</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:5px;">
+         <div style="width:18px;height:3px;border-radius:2px;background:#06b6d4;"></div><span style="font-size:11px;color:#0d7377;">Z3</span>
+        </div>
+       </div>
+      </div>
+      <!-- SVG chart -->
+      <svg class="chart-svg" width="100%" viewBox="0 0 520 160" preserveAspectRatio="xMidYMid meet" style="overflow:visible;">
+       <defs>
+        <linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1">
+         <stop offset="0%" stop-color="#34d399" stop-opacity="0.18" />
+         <stop offset="100%" stop-color="#34d399" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient id="lg2" x1="0" y1="0" x2="0" y2="1">
+         <stop offset="0%" stop-color="#14b8a6" stop-opacity="0.18" />
+         <stop offset="100%" stop-color="#14b8a6" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient id="lg3" x1="0" y1="0" x2="0" y2="1">
+         <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.18" />
+         <stop offset="100%" stop-color="#06b6d4" stop-opacity="0" />
+        </linearGradient>
+       </defs>
+       <!-- Y gridlines -->
+       <line x1="0" y1="10" x2="520" y2="10" stroke="rgba(100,220,170,0.07)" stroke-width="1" />
+       <line x1="0" y1="50" x2="520" y2="50" stroke="rgba(100,220,170,0.07)" stroke-width="1" />
+       <line x1="0" y1="90" x2="520" y2="90" stroke="rgba(100,220,170,0.07)" stroke-width="1" />
+       <line x1="0" y1="130" x2="520" y2="130" stroke="rgba(100,220,170,0.07)" stroke-width="1" />
+       <!-- Y labels -->
+       <text x="-4" y="14" fill="#0d7377" font-size="9" text-anchor="end" font-family="JetBrains Mono,monospace">34°</text>
+       <text x="-4" y="54" fill="#0d7377" font-size="9" text-anchor="end" font-family="JetBrains Mono,monospace">31°</text>
+       <text x="-4" y="94" fill="#0d7377" font-size="9" text-anchor="end" font-family="JetBrains Mono,monospace">28°</text>
+       <text x="-4" y="134" fill="#0d7377" font-size="9" text-anchor="end" font-family="JetBrains Mono,monospace">25°</text>
+       <!-- X time labels -->
+       <text x="0"   y="155" fill="#047857" font-size="9" text-anchor="middle" font-family="JetBrains Mono,monospace">08:00</text>
+       <text x="52"  y="155" fill="#047857" font-size="9" text-anchor="middle" font-family="JetBrains Mono,monospace">09:00</text>
+       <text x="104" y="155" fill="#047857" font-size="9" text-anchor="middle" font-family="JetBrains Mono,monospace">10:00</text>
+       <text x="156" y="155" fill="#047857" font-size="9" text-anchor="middle" font-family="JetBrains Mono,monospace">11:00</text>
+       <text x="208" y="155" fill="#047857" font-size="9" text-anchor="middle" font-family="JetBrains Mono,monospace">12:00</text>
+       <text x="260" y="155" fill="#047857" font-size="9" text-anchor="middle" font-family="JetBrains Mono,monospace">13:00</text>
+       <text x="312" y="155" fill="#047857" font-size="9" text-anchor="middle" font-family="JetBrains Mono,monospace">14:00</text>
+       <text x="364" y="155" fill="#047857" font-size="9" text-anchor="middle" font-family="JetBrains Mono,monospace">15:00</text>
+       <text x="416" y="155" fill="#047857" font-size="9" text-anchor="middle" font-family="JetBrains Mono,monospace">16:00</text>
+       <text x="468" y="155" fill="#047857" font-size="9" text-anchor="middle" font-family="JetBrains Mono,monospace">17:00</text>
+       <text x="520" y="155" fill="#047857" font-size="9" text-anchor="middle" font-family="JetBrains Mono,monospace">18:00</text>
+       <!-- Zone 1 area -->
+       <path d="M0,88 L52,82 L104,78 L156,70 L208,66 L260,58 L312,60 L364,52 L416,46 L468,44 L520,40 L520,140 L0,140Z" fill="url(#lg1)" />
+       <!-- Zone 2 area -->
+       <path d="M0,76 L52,68 L104,64 L156,56 L208,46 L260,40 L312,38 L364,30 L416,28 L468,22 L520,18 L520,140 L0,140Z" fill="url(#lg2)" />
+       <!-- Zone 3 area -->
+       <path d="M0,102 L52,98 L104,100 L156,96 L208,100 L260,104 L312,100 L364,108 L416,106 L468,112 L520,116 L520,140 L0,140Z" fill="url(#lg3)" />
+       <!-- Zone 1 line -->
+       <path class="line1" d="M0,88 L52,82 L104,78 L156,70 L208,66 L260,58 L312,60 L364,52 L416,46 L468,44 L520,40" stroke="#34d399" stroke-width="2.2" fill="none" />
+       <!-- Zone 2 line -->
+       <path class="line2" d="M0,76 L52,68 L104,64 L156,56 L208,46 L260,40 L312,38 L364,30 L416,28 L468,22 L520,18" stroke="#14b8a6" stroke-width="2.2" fill="none" />
+       <!-- Zone 3 line -->
+       <path class="line3" d="M0,102 L52,98 L104,100 L156,96 L208,100 L260,104 L312,100 L364,108 L416,106 L468,112 L520,116" stroke="#06b6d4" stroke-width="2.2" fill="none" />
+       <!-- Dots -->
+       <circle cx="520" cy="40"  r="4" fill="#34d399" />
+       <circle cx="520" cy="18"  r="4" fill="#14b8a6" />
+       <circle cx="520" cy="116" r="4" fill="#06b6d4" />
+      </svg>
+     </div>
+
+     <!-- Humidity Gauge -->
+     <div class="glass card-enter" style="border-radius:16px; padding:24px; animation-delay:0.35s; display:flex; flex-direction:column; align-items:center;">
+      <div style="font-size:14px; font-weight:700; color:#0f2f28; margin-bottom:4px;">Humidity Gauge</div>
+      <div style="font-size:11px; color:#0d7377; opacity:0.8; margin-bottom:14px;">Ambient — DHT22</div>
+      <svg width="150" height="150" viewBox="0 0 150 150">
+       <defs>
+        <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+         <stop offset="0%" stop-color="#14b8a6" />
+         <stop offset="100%" stop-color="#06b6d4" />
+        </linearGradient>
+       </defs>
+       <!-- Track -->
+       <circle cx="75" cy="75" r="58" fill="none" stroke="rgba(100,220,170,0.12)" stroke-width="12" stroke-dasharray="290 365" stroke-dashoffset="-37" stroke-linecap="round" transform="rotate(90 75 75)" />
+       <!-- Fill (76%) = 290*0.76 = 220.4 -->
+       <circle cx="75" cy="75" r="58" fill="none" stroke="url(#gaugeGrad)" stroke-width="12" stroke-dasharray="220 365" stroke-dashoffset="-37" stroke-linecap="round" transform="rotate(90 75 75)" style="filter:drop-shadow(0 0 6px #14b8a6)" />
+       <!-- Center text -->
+       <text x="75" y="68"  text-anchor="middle" fill="#0f2f28" font-size="26" font-weight="700" font-family="JetBrains Mono,monospace">76</text>
+       <text x="75" y="86"  text-anchor="middle" fill="#0d9488" font-size="12" font-weight="500" font-family="Space Grotesk,sans-serif">%RH</text>
+       <text x="75" y="106" text-anchor="middle" fill="#0d7377" font-size="9"  font-family="Space Grotesk,sans-serif">RELATIVE HUMIDITY</text>
+      </svg>
+      <!-- Labels -->
+      <div style="display:flex; justify-content:space-between; width:150px; margin-top:6px;">
+       <span style="font-size:10px; color:#0d7377; opacity:0.5; font-family:'JetBrains Mono',monospace;">0%</span>
+       <span style="font-size:10px; color:#0d7377; opacity:0.5; font-family:'JetBrains Mono',monospace;">100%</span>
+      </div>
+      <div style="margin-top:16px; width:100%;">
+       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+        <span style="font-size:11px; color:#047857;">Comfort Level</span>
+        <span style="font-size:11px; color:#fbbf24; font-family:'JetBrains Mono',monospace; font-weight:600;">HUMID</span>
+       </div>
+       <div style="height:5px; background:rgba(20,184,166,0.1); border-radius:99px; overflow:hidden;">
+        <div style="width:76%; height:100%; background:linear-gradient(90deg,#059669,#14b8a6,#0ea5e9); border-radius:99px;"></div>
+       </div>
+      </div>
+     </div>
+
+     <!-- Bar chart -->
+     <div class="glass card-enter" style="border-radius:16px; padding:24px; animation-delay:0.4s;">
+      <div style="font-size:14px; font-weight:700; color:#0f2f28; margin-bottom:4px;">Microclimate Comparison</div>
+      <div style="font-size:11px; color:#0d7377; opacity:0.8; margin-bottom:24px;">Temperature by zone</div>
+      <div style="display:flex; align-items:flex-end; justify-content:space-around; height:140px; gap:10px;">
+       <!-- Z1 -->
+       <div style="display:flex; flex-direction:column; align-items:center; gap:0; flex:1;">
+        <span style="font-size:12px; font-weight:700; color:#0f2f28; font-family:'JetBrains Mono',monospace; margin-bottom:10px; height:16px;">29.4°</span>
+        <div style="width:100%; position:relative; height:90px; display:flex; align-items:flex-end;">
+         <div class="bar-fill" style="width:100%; height:78%; background:linear-gradient(180deg,#34d399,rgba(52,211,153,0.3)); border-radius:6px 6px 3px 3px; animation-delay:0.5s; box-shadow:0 0 12px rgba(52,211,153,0.25);"></div>
+        </div>
+        <span style="font-size:10px; color:#0d7377; text-align:center; margin-top:12px;">Urban<br>Road</span>
+       </div>
+       <!-- Z2 -->
+       <div style="display:flex; flex-direction:column; align-items:center; gap:0; flex:1;">
+        <span style="font-size:12px; font-weight:700; color:#0f2f28; font-family:'JetBrains Mono',monospace; margin-bottom:10px; height:16px;">31.8°</span>
+        <div style="width:100%; position:relative; height:90px; display:flex; align-items:flex-end;">
+         <div class="bar-fill" style="width:100%; height:96%; background:linear-gradient(180deg,#14b8a6,rgba(20,184,166,0.3)); border-radius:6px 6px 3px 3px; animation-delay:0.65s; box-shadow:0 0 12px rgba(20,184,166,0.25);"></div>
+        </div>
+        <span style="font-size:10px; color:#0d7377; text-align:center; margin-top:12px;">Alum.<br>Roofs</span>
+       </div>
+       <!-- Z3 -->
+       <div style="display:flex; flex-direction:column; align-items:center; gap:0; flex:1;">
+        <span style="font-size:12px; font-weight:700; color:#0f2f28; font-family:'JetBrains Mono',monospace; margin-bottom:10px; height:16px;">26.1°</span>
+        <div style="width:100%; position:relative; height:90px; display:flex; align-items:flex-end;">
+         <div class="bar-fill" style="width:100%; height:60%; background:linear-gradient(180deg,#06b6d4,rgba(6,182,212,0.3)); border-radius:6px 6px 3px 3px; animation-delay:0.8s; box-shadow:0 0 12px rgba(6,182,212,0.25);"></div>
+        </div>
+        <span style="font-size:10px; color:#0d7377; text-align:center; margin-top:12px;">Tree<br>Cover</span>
+       </div>
+      </div>
+      <!-- Heat indicators -->
+      <div style="margin-top:18px; display:flex; flex-direction:column; gap:6px;">
+       <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:#0d7377; opacity:0.8; margin-bottom:2px;">Heat Indicators</div>
+       <div style="display:flex; align-items:center; gap:6px;">
+        <div style="width:10px; height:10px; border-radius:50%; background:#ef4444; box-shadow:0 0 6px #ef4444;"></div>
+        <span style="font-size:11px; color:#0f2f28;">Elevated — Alum. Roofs (+3.7°C)</span>
+       </div>
+       <div style="display:flex; align-items:center; gap:6px;">
+        <div style="width:10px; height:10px; border-radius:50%; background:#f59e0b; box-shadow:0 0 6px #f59e0b;"></div>
+        <span style="font-size:11px; color:#0f2f28;">Warm — Urban Road (+1.3°C)</span>
+       </div>
+       <div style="display:flex; align-items:center; gap:6px;">
+        <div style="width:10px; height:10px; border-radius:50%; background:#34d399; box-shadow:0 0 6px #34d399;"></div>
+        <span style="font-size:11px; color:#0f2f28;">Cool — Tree Cover (Baseline)</span>
+       </div>
+      </div>
+     </div>
+
+    </div>
+
+    <!-- ROW 3: Zone map -->
+    <div class="glass-strong card-enter" style="border-radius:16px; padding:26px; animation-delay:0.45s; margin-bottom:18px;">
+     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; flex-wrap:wrap; gap:12px;">
+      <div>
+       <div style="font-size:15px; font-weight:700; color:#0f2f28;">Sensor Network Map</div>
+       <div style="font-size:11px; color:#0d7377; opacity:0.6; margin-top:2px;">Spatial distribution of monitoring zones</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; background:rgba(52,211,153,0.07); border:1px solid rgba(52,211,153,0.15); border-radius:99px; padding:6px 14px;">
+       <i data-lucide="map-pin" style="width:13px;height:13px;color:#34d399;"></i>
+       <span style="font-size:11px; color:#047857;">3 Nodes Active</span>
+      </div>
+     </div>
+     <!-- Map visual -->
+     <div style="position:relative; background:rgba(6,20,14,0.6); border:1px solid rgba(52,211,153,0.1); border-radius:12px; overflow:hidden; height:180px;">
+      <!-- Grid lines -->
+      <svg width="100%" height="100%" style="position:absolute; inset:0;" preserveAspectRatio="xMidYMid meet">
+       <defs>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+         <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(52,211,153,0.05)" stroke-width="1" />
+        </pattern>
+        <radialGradient id="mapGlow1" cx="25%" cy="45%" r="30%">
+         <stop offset="0%" stop-color="rgba(52,211,153,0.12)" />
+         <stop offset="100%" stop-color="transparent" />
+        </radialGradient>
+        <radialGradient id="mapGlow2" cx="55%" cy="55%" r="30%">
+         <stop offset="0%" stop-color="rgba(239,68,68,0.08)" />
+         <stop offset="100%" stop-color="transparent" />
+        </radialGradient>
+        <radialGradient id="mapGlow3" cx="78%" cy="40%" r="25%">
+         <stop offset="0%" stop-color="rgba(6,182,212,0.12)" />
+         <stop offset="100%" stop-color="transparent" />
+        </radialGradient>
+       </defs>
+       <rect width="100%" height="100%" fill="url(#grid)" />
+       <ellipse cx="25%" cy="45%" rx="18%" ry="25%" fill="url(#mapGlow1)" />
+       <ellipse cx="55%" cy="55%" rx="18%" ry="25%" fill="url(#mapGlow2)" />
+       <ellipse cx="78%" cy="40%" rx="15%" ry="22%" fill="url(#mapGlow3)" />
+       <!-- Connecting dashed lines -->
+       <line x1="25%" y1="45%" x2="55%" y2="55%" stroke="rgba(52,211,153,0.2)" stroke-width="1" stroke-dasharray="5,4" />
+       <line x1="55%" y1="55%" x2="78%" y2="40%" stroke="rgba(52,211,153,0.2)" stroke-width="1" stroke-dasharray="5,4" />
+      </svg>
+      <!-- Zone circles -->
+      <div style="position:absolute; left:22%; top:50%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:8px;">
+       <div class="zone-circle" style="background:rgba(52,211,153,0.1); border-color:#34d399; color:#34d399;">
+        <span style="font-size:11px; font-weight:700;">Z1</span>
+       </div>
+       <div style="text-align:center;">
+        <div id="map-z1" style="font-size:10px; font-weight:600; color:#e0f5ee;">Urban Road</div>
+        <div style="font-size:10px; color:#34d399; font-family:'JetBrains Mono',monospace;">29.4°C</div>
+       </div>
+      </div>
+      <div style="position:absolute; left:54%; top:56%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:8px;">
+       <div class="zone-circle" style="background:rgba(239,68,68,0.1); border-color:#f87171; color:#f87171;">
+        <span style="font-size:11px; font-weight:700;">Z2</span>
+       </div>
+       <div style="text-align:center;">
+        <div id="map-z2" style="font-size:10px; font-weight:600; color:#e0f5ee;">Alum. Roofs</div>
+        <div style="font-size:10px; color:#f87171; font-family:'JetBrains Mono',monospace;">31.8°C</div>
+       </div>
+      </div>
+      <div style="position:absolute; left:78%; top:42%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:8px;">
+       <div class="zone-circle" style="background:rgba(6,182,212,0.1); border-color:#06b6d4; color:#06b6d4;">
+        <span style="font-size:11px; font-weight:700;">Z3</span>
+       </div>
+       <div style="text-align:center;">
+        <div id="map-z3" style="font-size:10px; font-weight:600; color:#e0f5ee;">Tree Cover</div>
+        <div style="font-size:10px; color:#06b6d4; font-family:'JetBrains Mono',monospace;">26.1°C</div>
+       </div>
+      </div>
+      <!-- Compass -->
+      <div style="position:absolute; bottom:12px; right:14px; opacity:0.35; font-size:10px; color:#6ee7b7; font-family:'JetBrains Mono',monospace; text-align:center;">
+       <div>N</div>
+       <div style="font-size:16px; line-height:1;">⊕</div>
+      </div>
+      <!-- Scale bar -->
+      <div style="position:absolute; bottom:14px; left:16px; display:flex; align-items:center; gap:5px; opacity:0.4;">
+       <div style="width:30px; height:2px; background:#34d399; border-radius:1px;"></div>
+       <span style="font-size:9px; color:#6ee7b7; font-family:'JetBrains Mono',monospace;">50m</span>
+      </div>
+     </div>
+    </div>
+
+    <!-- FOOTER STATS -->
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+     <div class="glass card-enter" style="border-radius:14px; padding:20px 24px; animation-delay:0.5s; display:flex; align-items:center; gap:16px;">
+      <div style="width:44px; height:44px; background:linear-gradient(135deg,rgba(52,211,153,0.2),rgba(52,211,153,0.08)); border:1px solid rgba(52,211,153,0.3); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+       <i data-lucide="radio" style="width:20px;height:20px;color:#34d399;"></i>
       </div>
       <div>
-        <div style="font-family:'Orbitron',monospace;font-size:1.5rem;font-weight:900;color:var(--clr-warn);" id="satisfaction-count">0%</div>
-        <div style="font-size:0.62rem;color:var(--clr-muted);letter-spacing:0.1em;margin-top:4px;">SATISFACTION</div>
+       <div style="font-size:24px; font-weight:700; color:#0f2f28;" class="mono gradient-text" id="stat1-val">3</div>
+       <div id="stat1-label" style="font-size:12px; color:#0d7377; font-weight:500; margin-top:1px;">Sensors Active</div>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- ========================================================
-     PARTNER PAGE
-     ======================================================== -->
-<div id="page-partner" class="page">
-  <div class="metal-layer" aria-hidden="true">
-    <div class="deco deco-a" style="top:5%;right:3%;">
-      <svg viewBox="0 0 60 60" width="68" height="68">
-        <defs>
-          <linearGradient id="g-pt-ast" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#1a6eb8"/><stop offset="30%" stop-color="#a0cfef"/>
-            <stop offset="65%" stop-color="#4a9fd4"/><stop offset="100%" stop-color="#0d4a80"/>
-          </linearGradient>
-        </defs>
-        <g stroke="url(#g-pt-ast)" stroke-width="5" stroke-linecap="round" transform="translate(30,30)">
-          <line x1="0" y1="-22" x2="0" y2="22"/>
-          <line x1="-22" y1="0" x2="22" y2="0"/>
-          <line x1="-15.6" y1="-15.6" x2="15.6" y2="15.6"/>
-          <line x1="15.6" y1="-15.6" x2="-15.6" y2="15.6"/>
-        </g>
-      </svg>
-    </div>
-    <div class="deco deco-c" style="bottom:10%;left:2%;">
-      <svg viewBox="0 0 60 60" width="52" height="52">
-        <defs>
-          <radialGradient id="g-pt-sph" cx="21" cy="17" r="40" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#a0d8f7"/>
-            <stop offset="60%" stop-color="#1a6eb8"/>
-            <stop offset="100%" stop-color="#0d2f5a"/>
-          </radialGradient>
-        </defs>
-        <circle cx="30" cy="30" r="27" fill="url(#g-pt-sph)" opacity="0.7"/>
-      </svg>
-    </div>
-  </div>
-  <div class="page-container">
-    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
-      <button class="btn" onclick="goToHome()" style="padding:0.5rem 1rem;font-size:0.7rem;">◁ BACK</button>
-      <h2 style="font-family:'Orbitron',monospace;font-size:0.9rem;font-weight:700;color:var(--clr-text);">PARTNER WITH ISOCLIME</h2>
-    </div>
-
-    <!-- Project summary -->
-    <div class="learn-card learn-accent2">
-      <h3>🌡 ABOUT ISOCLIME</h3>
-      <p>IsoClime monitors temperature and humidity across urban microclimates to help cities understand environmental conditions and improve urban planning and public health.</p>
-    </div>
-
-    <!-- Overview -->
-    <div class="learn-card">
-      <h3>🌍 ENTERPRISE DATA ACCESS</h3>
-      <p>Research institutions, government agencies, and real estate developers can request detailed microclimate data, zone-specific reports, and collaboration opportunities through IsoClime. This information can support research, urban planning, construction decisions, and climate-responsive development.</p>
-    </div>
-
-    <!-- Partnership opportunities -->
-    <div class="learn-card learn-accent2">
-      <h3>🤝 PARTNERSHIP OPPORTUNITIES</h3>
-      <p style="margin-bottom:0.75rem;">We collaborate with public and private organisations on a range of initiatives:</p>
-      <ul style="list-style:none;padding:0;display:grid;gap:0.5rem;">
-        <li style="display:flex;align-items:flex-start;gap:0.6rem;font-size:0.79rem;color:var(--clr-muted);line-height:1.6;"><span style="color:var(--clr-accent2);flex-shrink:0;">◈</span> Research partnerships</li>
-        <li style="display:flex;align-items:flex-start;gap:0.6rem;font-size:0.79rem;color:var(--clr-muted);line-height:1.6;"><span style="color:var(--clr-accent2);flex-shrink:0;">◈</span> Data access for environmental studies</li>
-        <li style="display:flex;align-items:flex-start;gap:0.6rem;font-size:0.79rem;color:var(--clr-muted);line-height:1.6;"><span style="color:var(--clr-accent2);flex-shrink:0;">◈</span> Pilot deployments in cities or campuses</li>
-        <li style="display:flex;align-items:flex-start;gap:0.6rem;font-size:0.79rem;color:var(--clr-muted);line-height:1.6;"><span style="color:var(--clr-accent2);flex-shrink:0;">◈</span> Urban planning and climate analysis</li>
-        <li style="display:flex;align-items:flex-start;gap:0.6rem;font-size:0.79rem;color:var(--clr-muted);line-height:1.6;"><span style="color:var(--clr-accent2);flex-shrink:0;">◈</span> Health and environmental monitoring</li>
-      </ul>
-    </div>
-
-    <hr class="divider" />
-
-    <!-- Inquiry form -->
-    <div class="section-heading">◈ INQUIRY FORM</div>
-
-    <form id="partner-form" onsubmit="submitPartnerForm(event)">
-      <div style="display:grid;gap:1rem;">
-
-        <div>
-          <div class="label">Name *</div>
-          <input id="pf-name" class="text-input" type="text" placeholder="Your full name" required />
-        </div>
-
-        <div>
-          <div class="label">Organization / Institution *</div>
-          <input id="pf-org" class="text-input" type="text" placeholder="e.g. City of San Pedro Sula" required />
-        </div>
-
-        <div>
-          <div class="label">Position / Role</div>
-          <input id="pf-role" class="text-input" type="text" placeholder="e.g. Urban Planner, Research Director" />
-        </div>
-
-        <div>
-          <div class="label">Email Address *</div>
-          <input id="pf-email" class="text-input" type="email" placeholder="you@example.com" required />
-        </div>
-
-        <div>
-          <div class="label">Phone Number</div>
-          <input id="pf-phone" class="text-input" type="tel" placeholder="+1 (555) 000-0000" />
-        </div>
-
-        <div>
-          <div class="label">Type of Organization *</div>
-          <select id="pf-type" class="text-input" required style="cursor:pointer;">
-            <option value="" disabled selected>— Select type —</option>
-            <option value="Government">Government</option>
-            <option value="Research Institute">Research Institute</option>
-            <option value="Business">Business</option>
-            <option value="NGO">NGO</option>
-          </select>
-        </div>
-
-        <div>
-          <div class="label">Message / Inquiry *</div>
-          <textarea id="pf-message" class="text-input" rows="5"
-                    placeholder="Describe your data needs, research goals, or collaboration interest…"
-                    required style="resize:vertical;"></textarea>
-        </div>
-
-        <p style="font-size:0.7rem;color:var(--clr-muted);line-height:1.7;text-align:center;">
-          ✉ Responses are typically provided within <strong>3–5 business days</strong>.<br/>
-          Your inquiry will be sent to <strong>Team1Isoclime@outlook.com</strong>.
-        </p>
-
-        <div class="cta-row">
-          <button type="submit" class="btn btn-primary">◈ REQUEST DETAILED DATA</button>
-          <button type="button" class="btn"
-                  onclick="window.location.href='mailto:Team1Isoclime@outlook.com?subject=IsoClime%20Inquiry'">
-            ✉ CONTACT ISOCLIME
-          </button>
-        </div>
-
+     </div>
+     <div class="glass card-enter" style="border-radius:14px; padding:20px 24px; animation-delay:0.56s; display:flex; align-items:center; gap:16px;">
+      <div style="width:44px; height:44px; background:linear-gradient(135deg,rgba(20,184,166,0.2),rgba(20,184,166,0.08)); border:1px solid rgba(20,184,166,0.3); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+       <i data-lucide="layers" style="width:20px;height:20px;color:#14b8a6;"></i>
       </div>
-    </form>
-
-  </div>
-</div>
-
-<!-- ========================================================
-     MAP / ZONE SELECTION PAGE
-     ======================================================== -->
-<div id="page-map" class="page">
-  <div class="metal-layer" aria-hidden="true">
-    <!-- squiggle top-right -->
-    <div class="deco deco-b" style="top:4%;right:2%;">
-      <svg viewBox="0 0 70 115" width="52" height="86">
-        <defs>
-          <linearGradient id="g-mp-sqg" x1="0" y1="0" x2="70" y2="115" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#888"/><stop offset="28%" stop-color="#eee"/>
-            <stop offset="60%" stop-color="#aaa"/><stop offset="85%" stop-color="#ddd"/>
-            <stop offset="100%" stop-color="#555"/>
-          </linearGradient>
-        </defs>
-        <path d="M35,8 C65,8 65,50 35,57 C5,64 5,100 35,107"
-              fill="none" stroke="url(#g-mp-sqg)" stroke-width="13" stroke-linecap="round"/>
-      </svg>
-    </div>
-    <!-- asterisk left-center -->
-    <div class="deco deco-a" style="top:45%;left:2%;">
-      <svg viewBox="0 0 60 60" width="66" height="66">
-        <defs>
-          <linearGradient id="g-mp-ast" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#666"/><stop offset="30%" stop-color="#f0f0f0"/>
-            <stop offset="65%" stop-color="#aaa"/><stop offset="100%" stop-color="#444"/>
-          </linearGradient>
-        </defs>
-        <g stroke="url(#g-mp-ast)" stroke-width="5" stroke-linecap="round" transform="translate(30,30)">
-          <line x1="0" y1="-22" x2="0" y2="22"/>
-          <line x1="-22" y1="0" x2="22" y2="0"/>
-          <line x1="-15.6" y1="-15.6" x2="15.6" y2="15.6"/>
-          <line x1="15.6" y1="-15.6" x2="-15.6" y2="15.6"/>
-        </g>
-      </svg>
-    </div>
-    <!-- 4-pointed spike bottom-right -->
-    <div class="deco deco-c" style="bottom:6%;right:3%;">
-      <svg viewBox="0 0 80 80" width="64" height="64">
-        <defs>
-          <linearGradient id="g-mp-spk" x1="0" y1="80" x2="80" y2="0" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#444"/>
-            <stop offset="50%" stop-color="#eeeeee"/>
-            <stop offset="100%" stop-color="#888"/>
-          </linearGradient>
-        </defs>
-        <path d="M40,2 L43,37 L78,40 L43,43 L40,78 L37,43 L2,40 L37,37 Z"
-              fill="url(#g-mp-spk)"/>
-      </svg>
-    </div>
-  </div>
-  <div class="page-container">
-    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
-      <button class="btn" onclick="goToHome()" style="padding:0.5rem 1rem;font-size:0.7rem;">◁ BACK</button>
-      <h2 style="font-family:'Orbitron',monospace;font-size:0.9rem;font-weight:700;color:var(--clr-text);">SELECT YOUR ZONE</h2>
-    </div>
-
-    <div class="label">SEARCH BY NEIGHBORHOOD</div>
-    <div class="search-wrapper">
-      <input type="text" id="neighborhood-input" class="text-input"
-             placeholder="e.g. Col. Kennedy, Chamelecón, Rivera Hernández…"
-             autocomplete="off"
-             oninput="filterZones(this.value)"
-             onkeydown="handleSuggestionKey(event)" />
-      <div id="zone-suggestions"></div>
-    </div>
-
-    <div class="label">OR CLICK YOUR ZONE ON THE MAP</div>
-    <div id="leaflet-map"></div>
-
-    <div id="map-selected-zone">
-      ZONE SELECTED: <span id="zone-name-display"></span>
-    </div>
-
-    <button class="btn btn-primary" id="start-survey-btn"
-            onclick="startSurvey()" disabled style="width:100%;">
-      ▶ START CLIMATE ANALYSIS
-    </button>
-  </div>
-</div>
-
-<!-- ========================================================
-     QUESTIONS PAGE
-     ======================================================== -->
-<div id="page-questions" class="page">
-  <div class="metal-layer" aria-hidden="true">
-    <!-- sphere top-left -->
-    <div class="deco deco-b" style="top:5%;left:2%;">
-      <svg viewBox="0 0 60 60" width="54" height="54">
-        <defs>
-          <radialGradient id="g-qp-sph" cx="21" cy="17" r="40" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#ffffff"/>
-            <stop offset="35%" stop-color="#cccccc"/>
-            <stop offset="70%" stop-color="#555555"/>
-            <stop offset="100%" stop-color="#181818"/>
-          </radialGradient>
-        </defs>
-        <circle cx="30" cy="30" r="27" fill="url(#g-qp-sph)"/>
-      </svg>
-    </div>
-    <!-- asterisk right-center -->
-    <div class="deco deco-a" style="top:42%;right:2%;">
-      <svg viewBox="0 0 60 60" width="64" height="64">
-        <defs>
-          <linearGradient id="g-qp-ast" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#666"/><stop offset="30%" stop-color="#f0f0f0"/>
-            <stop offset="65%" stop-color="#aaa"/><stop offset="100%" stop-color="#444"/>
-          </linearGradient>
-        </defs>
-        <g stroke="url(#g-qp-ast)" stroke-width="5" stroke-linecap="round" transform="translate(30,30)">
-          <line x1="0" y1="-22" x2="0" y2="22"/>
-          <line x1="-22" y1="0" x2="22" y2="0"/>
-          <line x1="-15.6" y1="-15.6" x2="15.6" y2="15.6"/>
-          <line x1="15.6" y1="-15.6" x2="-15.6" y2="15.6"/>
-        </g>
-      </svg>
-    </div>
-    <!-- squiggle bottom-left -->
-    <div class="deco deco-c" style="bottom:7%;left:1%;">
-      <svg viewBox="0 0 70 115" width="50" height="82">
-        <defs>
-          <linearGradient id="g-qp-sqg" x1="0" y1="0" x2="70" y2="115" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#777"/><stop offset="25%" stop-color="#fff"/>
-            <stop offset="55%" stop-color="#999"/><stop offset="80%" stop-color="#ddd"/>
-            <stop offset="100%" stop-color="#555"/>
-          </linearGradient>
-        </defs>
-        <path d="M35,8 C65,8 65,50 35,57 C5,64 5,100 35,107"
-              fill="none" stroke="url(#g-qp-sqg)" stroke-width="13" stroke-linecap="round"/>
-      </svg>
-    </div>
-  </div>
-  <div class="page-container">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-      <button class="btn"
-              onclick="currentQuestionIndex > 0 ? prevQuestion() : showPage('page-map')"
-              style="padding:0.5rem 1rem;font-size:0.7rem;">◁ BACK</button>
-      <span id="q-counter"
-            style="font-family:'VT323',monospace;font-size:1rem;color:var(--clr-muted);">1 / 9</span>
-    </div>
-
-    <div class="steps-bar" id="steps-bar"></div>
-
-    <div id="question-area"></div>
-
-    <div class="q-nav">
-      <span id="q-zone-label" style="font-size:0.68rem;color:var(--clr-muted);"></span>
-      <button class="btn btn-primary" id="q-next-btn"
-              onclick="nextQuestion()" disabled>NEXT ▶</button>
-    </div>
-  </div>
-</div>
-
-<!-- ========================================================
-     RESULTS PAGE
-     ======================================================== -->
-<div id="page-results" class="page">
-  <div class="metal-layer" aria-hidden="true">
-    <!-- squiggle top-left -->
-    <div class="deco deco-a" style="top:3%;left:1%;">
-      <svg viewBox="0 0 70 115" width="58" height="95">
-        <defs>
-          <linearGradient id="g-rp-sqg" x1="0" y1="0" x2="70" y2="115" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#888"/><stop offset="28%" stop-color="#fff"/>
-            <stop offset="58%" stop-color="#aaa"/><stop offset="82%" stop-color="#ddd"/>
-            <stop offset="100%" stop-color="#555"/>
-          </linearGradient>
-        </defs>
-        <path d="M35,8 C65,8 65,50 35,57 C5,64 5,100 35,107"
-              fill="none" stroke="url(#g-rp-sqg)" stroke-width="13" stroke-linecap="round"/>
-      </svg>
-    </div>
-    <!-- sphere right-center -->
-    <div class="deco deco-b" style="top:38%;right:2%;">
-      <svg viewBox="0 0 60 60" width="58" height="58">
-        <defs>
-          <radialGradient id="g-rp-sph" cx="21" cy="17" r="40" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#ffffff"/>
-            <stop offset="35%" stop-color="#cccccc"/>
-            <stop offset="70%" stop-color="#555555"/>
-            <stop offset="100%" stop-color="#181818"/>
-          </radialGradient>
-        </defs>
-        <circle cx="30" cy="30" r="27" fill="url(#g-rp-sph)"/>
-      </svg>
-    </div>
-    <!-- asterisk bottom-right -->
-    <div class="deco deco-c" style="bottom:6%;right:3%;">
-      <svg viewBox="0 0 60 60" width="68" height="68">
-        <defs>
-          <linearGradient id="g-rp-ast" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#666"/><stop offset="30%" stop-color="#f0f0f0"/>
-            <stop offset="65%" stop-color="#aaa"/><stop offset="100%" stop-color="#444"/>
-          </linearGradient>
-        </defs>
-        <g stroke="url(#g-rp-ast)" stroke-width="5" stroke-linecap="round" transform="translate(30,30)">
-          <line x1="0" y1="-22" x2="0" y2="22"/>
-          <line x1="-22" y1="0" x2="22" y2="0"/>
-          <line x1="-15.6" y1="-15.6" x2="15.6" y2="15.6"/>
-          <line x1="15.6" y1="-15.6" x2="-15.6" y2="15.6"/>
-        </g>
-      </svg>
-    </div>
-  </div>
-  <div class="page-container">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-      <button class="btn" onclick="restartApp()" style="padding:0.5rem 1rem;font-size:0.7rem;">◁ NEW SCAN</button>
-      <span id="result-zone-label"
-            style="font-family:'Orbitron',monospace;font-size:0.6rem;font-weight:700;color:var(--clr-muted);">
-        ZONA ANALIZADA: —
-      </span>
-    </div>
-
-    <!-- Score ring -->
-    <div class="score-ring-wrapper">
-      <svg width="90" height="90" viewBox="0 0 90 90">
-        <circle class="score-bg-circle" cx="45" cy="45" r="38" />
-        <circle id="score-circle" cx="45" cy="45" r="38" />
-      </svg>
-      <div class="score-number-overlay">
-        <div id="score-number"
-             style="font-family:'Orbitron',monospace;font-size:1.5rem;font-weight:900;color:var(--clr-accent);">0</div>
-        <div style="font-size:0.52rem;color:var(--clr-muted);letter-spacing:0.12em;">RISK</div>
+      <div>
+       <div style="font-size:24px; font-weight:700; color:#0f2f28;" class="mono gradient-text" id="stat2-val">3</div>
+       <div id="stat2-label" style="font-size:12px; color:#0d7377; font-weight:500; margin-top:1px;">Zones Monitored</div>
       </div>
+     </div>
+     <div class="glass card-enter" style="border-radius:14px; padding:20px 24px; animation-delay:0.62s; display:flex; align-items:center; gap:16px;">
+      <div style="width:44px; height:44px; background:linear-gradient(135deg,rgba(6,182,212,0.2),rgba(6,182,212,0.08)); border:1px solid rgba(6,182,212,0.3); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+       <i data-lucide="activity" style="width:20px;height:20px;color:#06b6d4;"></i>
+      </div>
+      <div>
+       <div style="font-size:24px; font-weight:700; color:#0f2f28; font-family:'JetBrains Mono',monospace;" id="stat3-val" class="gradient-text">●</div>
+       <div id="stat3-label" style="font-size:12px; color:#0d7377; font-weight:500; margin-top:1px;">Live Data Streaming</div>
+      </div>
+     </div>
     </div>
 
-    <!-- Summary card -->
-    <div class="card" style="text-align:center;margin-bottom:1.5rem;">
-      <div id="result-summary-title"
-           style="font-family:'Orbitron',monospace;font-size:0.85rem;font-weight:700;color:var(--clr-text);margin-bottom:0.5rem;"></div>
-      <div id="result-summary-text"
-           style="font-size:0.78rem;color:var(--clr-muted);line-height:1.7;"></div>
-    </div>
+   </main>
 
-    <!-- Sensor data -->
-    <div class="section-heading">◈ ZONE SENSOR DATA</div>
-    <div class="card" style="margin-bottom:1.5rem;">
-      <div id="sensor-data-grid"></div>
-    </div>
+   <!-- ══ FOOTER ══ -->
+   <footer style="text-align:center; padding:16px 32px 24px; opacity:0.35;">
+    <span style="font-size:10px; color:#6ee7b7; font-family:'JetBrains Mono',monospace; letter-spacing:0.12em;">ISOCLIME v1.0 · ESP32-SENSOR-NODE · MQTT PROTOCOL · © 2025</span>
+   </footer>
 
-    <!-- Recommendations -->
-    <div class="section-heading">▲ RECOMMENDATIONS</div>
-    <div id="recommendations-container"></div>
-
-    <!-- Risk Breakdown Chart -->
-    <div class="section-heading" style="margin-top:1.5rem;">◈ RISK FACTOR BREAKDOWN</div>
-    <div class="card" style="margin-bottom:1.5rem;">
-      <div class="bar-chart" id="risk-chart"></div>
-    </div>
-
-    <hr class="divider" />
-    <div style="display:flex;gap:0.75rem;padding:0.5rem 0 1.5rem;">
-      <button class="btn" onclick="restartApp()" style="flex:1;">◁ SCAN ANOTHER ZONE</button>
-      <button class="btn" onclick="printReport()" style="flex:1;">⎙ PRINT REPORT</button>
-    </div>
   </div>
-</div>
 
-<!-- ========================================================
-     CLIMATE SCIENCE PAGE
-     ======================================================== -->
-<div id="page-learn" class="page">
-  <div class="metal-layer" aria-hidden="true">
-    <div class="deco deco-a" style="top:5%;right:3%;">
-      <svg viewBox="0 0 60 60" width="68" height="68">
-        <defs>
-          <linearGradient id="g-ln-ast" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#666"/><stop offset="30%" stop-color="#f0f0f0"/>
-            <stop offset="65%" stop-color="#aaa"/><stop offset="100%" stop-color="#444"/>
-          </linearGradient>
-        </defs>
-        <g stroke="url(#g-ln-ast)" stroke-width="5" stroke-linecap="round" transform="translate(30,30)">
-          <line x1="0" y1="-22" x2="0" y2="22"/>
-          <line x1="-22" y1="0" x2="22" y2="0"/>
-          <line x1="-15.6" y1="-15.6" x2="15.6" y2="15.6"/>
-          <line x1="15.6" y1="-15.6" x2="-15.6" y2="15.6"/>
-        </g>
-      </svg>
-    </div>
-  </div>
-  <div class="page-container">
-    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
-      <button class="btn" onclick="goToHome()" style="padding:0.5rem 1rem;font-size:0.7rem;">◁ BACK</button>
-      <h2 style="font-family:'Orbitron',monospace;font-size:0.9rem;font-weight:700;color:var(--clr-text);">CLIMATE SCIENCE</h2>
-    </div>
-
-    <div class="learn-card">
-      <h3>🌡 WHAT IS A MICROCLIMATE?</h3>
-      <p>A microclimate is a local set of atmospheric conditions that differ from the surrounding area. In cities like San Pedro Sula, factors like building density, pavement coverage, and lack of vegetation create distinct microclimates — some significantly hotter and more humid than natural surroundings.</p>
-    </div>
-
-    <div class="learn-card learn-accent2">
-      <h3>🏙 URBAN HEAT ISLAND EFFECT</h3>
-      <p>Urban areas absorb and re-emit more solar radiation than rural areas due to dark surfaces (asphalt, rooftops). This "heat island" effect can raise local temperatures by 2–8°C. Zinc roofs and concrete surfaces are major contributors in tropical cities.</p>
-      <div class="learn-stat-grid">
-        <div class="learn-stat">
-          <span class="learn-stat-value">+5°C</span>
-          <span class="learn-stat-label">URBAN VS RURAL TEMP</span>
-        </div>
-        <div class="learn-stat">
-          <span class="learn-stat-value">70%</span>
-          <span class="learn-stat-label">CITIES ARE IMPERVIOUS SURFACES</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="learn-card learn-warn">
-      <h3>💧 HUMIDITY &amp; HEALTH RISKS</h3>
-      <p>High humidity (above 70% RH) promotes mold growth, dust mites, and respiratory issues. In combination with heat, it elevates the "feels like" temperature dramatically — a condition called heat stress. Vulnerable populations (elderly, children, those with asthma) are disproportionately affected.</p>
-      <div class="learn-stat-grid">
-        <div class="learn-stat">
-          <span class="learn-stat-value">70%</span>
-          <span class="learn-stat-label">RH THRESHOLD FOR MOLD RISK</span>
-        </div>
-        <div class="learn-stat">
-          <span class="learn-stat-value">+8°C</span>
-          <span class="learn-stat-label">EXTRA FEELS-LIKE AT HIGH HUMIDITY</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="learn-card">
-      <h3>🌿 NATURE-BASED SOLUTIONS</h3>
-      <p>Planting shade trees reduces surface temperatures by up to 10°C. Green roofs cut indoor temperature by 3–5°C. Permeable pavements reduce flooding and lower ground-level heat. These approaches are proven to be 3× more cost-effective than mechanical cooling in tropical climates.</p>
-    </div>
-
-    <div class="learn-card">
-      <h3>📊 WHY ISOCLIME USES AI</h3>
-      <p>ISOCLIME combines sensor data (temperature, humidity, UV index) with resident survey responses to build a neighborhood-level risk map. Machine learning models trained on Central American climate data weight different factors — building materials, exposure, household vulnerability — to generate personalized recommendations rather than generic advice.</p>
-    </div>
-
-    <div class="learn-card learn-accent2">
-      <h3>🏫 SAN PEDRO SULA CLIMATE CONTEXT</h3>
-      <p>San Pedro Sula sits in the Sula Valley at ~75 m elevation. Average temperature: 28°C (high: 36°C). Annual rainfall: ~2,200 mm. The rainy season (May–November) brings high humidity that amplifies heat stress. Neighborhoods with high building density and minimal tree cover, like parts of Rivera Hernández and Chamelecón, record the highest urban heat island intensities.</p>
-      <div class="learn-stat-grid">
-        <div class="learn-stat">
-          <span class="learn-stat-value">28°C</span>
-          <span class="learn-stat-label">AVERAGE TEMPERATURE</span>
-        </div>
-        <div class="learn-stat">
-          <span class="learn-stat-value">2,200mm</span>
-          <span class="learn-stat-label">ANNUAL RAINFALL</span>
-        </div>
-      </div>
-    </div>
-
-    <hr class="divider" />
-    <div style="text-align:center;padding:0.5rem 0 1.5rem;">
-      <button class="btn btn-primary" onclick="showPage('page-map')" style="width:100%;">▶ START ANALYSIS</button>
-    </div>
-  </div>
-</div>
-     ======================================================== -->
-<script>
-
-// ================== ELEMENT SDK STUB ==================
-window.elementSdk = {
-  _config: {},
-  _onConfigChange: null,
-  init: function({ defaultConfig, onConfigChange, mapToCapabilities, mapToEditPanelValues }) {
-    this._config = { ...defaultConfig };
-    this._onConfigChange = onConfigChange;
-    onConfigChange(this._config);
-  },
-  setConfig: function(updates) {
-    Object.assign(this._config, updates);
-    if (this._onConfigChange) this._onConfigChange(this._config);
-  }
-};
-
-// ================== STATE ==================
-let currentZone = '';
-let answers = {};
-let currentQuestionIndex = 0;
-
-// ================== QUESTIONS ==================
-const questions = [
-  {
-    id: 'issues',
-    title: 'CLIMATE ISSUES DETECTED',
-    subtitle: 'Select all that apply to your home or zone.',
-    type: 'multi',
-    options: [
-      { value: 'Mold or fungus growth',          label: 'Mold or fungus growth' },
-      { value: 'Excessive humidity / dampness',  label: 'Excessive humidity / dampness' },
-      { value: 'Extreme heat indoors',           label: 'Extreme heat indoors' },
-      { value: 'Flooding or standing water',     label: 'Flooding or standing water' },
-      { value: 'Poor air quality / dust',        label: 'Poor air quality / dust' },
-    ]
-  },
-  {
-    id: 'urgency',
-    title: 'URGENCY LEVEL',
-    subtitle: 'How urgent is the situation?',
-    type: 'single',
-    options: [
-      { value: 'Critical — affecting health now',        label: 'Critical — affecting health now' },
-      { value: 'High — worsening over time',             label: 'High — worsening over time' },
-      { value: 'Medium — manageable but concerning',     label: 'Medium — manageable but concerning' },
-      { value: 'Low — preventive interest only',         label: 'Low — preventive interest only' },
-    ]
-  },
-  {
-    id: 'building_type',
-    title: 'BUILDING TYPE',
-    subtitle: 'What type of structure is your home?',
-    type: 'single',
-    options: [
-      { value: 'Concrete block',       label: 'Concrete block' },
-      { value: 'Metal / zinc structure', label: 'Metal / zinc structure' },
-      { value: 'Wood frame',           label: 'Wood frame' },
-      { value: 'Mixed materials',      label: 'Mixed materials' },
-    ]
-  },
-  {
-    id: 'roof',
-    title: 'ROOF TYPE',
-    subtitle: 'What material is your roof?',
-    type: 'single',
-    options: [
-      { value: 'zinc / corrugated metal', label: 'Zinc / corrugated metal' },
-      { value: 'Concrete slab',           label: 'Concrete slab' },
-      { value: 'Tile / terracotta',       label: 'Tile / terracotta' },
-      { value: 'Visible cracks or damage', label: 'Visible cracks or damage' },
-    ]
-  },
-  {
-    id: 'sunlight',
-    title: 'SUNLIGHT EXPOSURE',
-    subtitle: 'How much direct sun does your home receive?',
-    type: 'single',
-    options: [
-      { value: 'Full sun 6+ hours/day', label: 'Full sun 6+ hours/day' },
-      { value: 'Mornings only',         label: 'Mornings only' },
-      { value: 'Afternoons only',       label: 'Afternoons only' },
-      { value: 'Mostly shaded',         label: 'Mostly shaded' },
-    ]
-  },
-  {
-    id: 'electricity',
-    title: 'ENERGY CONSUMPTION',
-    subtitle: 'Has your electricity bill changed recently?',
-    type: 'single',
-    options: [
-      { value: 'Increased significantly — over 30%', label: 'Increased significantly — over 30%' },
-      { value: 'Slightly increased',                 label: 'Slightly increased' },
-      { value: 'About the same',                     label: 'About the same' },
-      { value: 'Decreased',                          label: 'Decreased' },
-    ]
-  },
-  {
-    id: 'tried',
-    title: 'SOLUTIONS ATTEMPTED',
-    subtitle: 'What have you already tried? (Select all that apply)',
-    type: 'multi',
-    options: [
-      { value: 'Ventilation fans',       label: 'Ventilation fans' },
-      { value: 'Air conditioning',       label: 'Air conditioning' },
-      { value: 'Dehumidifier',           label: 'Dehumidifier' },
-      { value: 'Window tinting / film',  label: 'Window tinting / film' },
-      { value: 'Nothing yet',            label: 'Nothing yet' },
-    ]
-  },
-  {
-    id: 'household',
-    title: 'HOUSEHOLD MEMBERS',
-    subtitle: 'Who lives in your home? (Select all that apply)',
-    type: 'multi',
-    options: [
-      { value: 'Young children',                      label: 'Young children (under 10)' },
-      { value: 'Elderly',                             label: 'Elderly (65+)' },
-      { value: 'People with respiratory conditions',  label: 'People with respiratory conditions' },
-      { value: 'Healthy adults only',                 label: 'Healthy adults only' },
-    ]
-  },
-  {
-    id: 'budget',
-    title: 'AVAILABLE BUDGET',
-    subtitle: 'What is your budget for improvements?',
-    type: 'single',
-    options: [
-      { value: 'Under L. 500',      label: 'Under L. 500' },
-      { value: 'L. 500 – 2,000',    label: 'L. 500 – 2,000' },
-      { value: 'L. 2,000 – 8,000',  label: 'L. 2,000 – 8,000' },
-      { value: 'Over L. 8,000',     label: 'Over L. 8,000' },
-    ]
-  },
-];
-
-// ================== ZONES (San Pedro Sula, Cortés) ==================
-const zones = [
-  // ── Downtown / Barrios históricos ──────────────
-  { name: 'Centro Histórico',        lat: 15.5020, lng: -88.0245 },
-  { name: 'Barrio El Centro',        lat: 15.5030, lng: -88.0255 },
-  { name: 'Barrio Guadalupe',        lat: 15.5034, lng: -88.0234 },
-  { name: 'Barrio Cabañas',          lat: 15.5056, lng: -88.0267 },
-  { name: 'Barrio Paz Barahona',     lat: 15.5045, lng: -88.0178 },
-  { name: 'Barrio Bendaña',          lat: 15.5012, lng: -88.0201 },
-  { name: 'Barrio Los Andes',        lat: 15.5167, lng: -88.0298 },
-  { name: 'Barrio Río de Piedras',   lat: 15.5089, lng: -88.0178 },
-  // ── Sector Norte ───────────────────────────────
-  { name: 'Chamelecón',              lat: 15.5389, lng: -88.0156 },
-  { name: 'Rivera Hernández',        lat: 15.5456, lng: -88.0345 },
-  { name: 'El Carrizal',             lat: 15.5312, lng: -88.0234 },
-  { name: 'El Pedregal',             lat: 15.5289, lng: -88.0134 },
-  { name: 'El Edén',                 lat: 15.5312, lng: -88.0289 },
-  { name: 'Res. El Edén',            lat: 15.5345, lng: -88.0312 },
-  { name: 'Loarque',                 lat: 15.5389, lng: -88.0456 },
-  { name: 'Planeta',                 lat: 15.5267, lng: -88.0145 },
-  { name: 'Col. 21 de Octubre',      lat: 15.5234, lng: -88.0389 },
-  { name: 'Col. El Sauce',           lat: 15.5234, lng: -88.0423 },
-  { name: 'Col. Las Vegas',          lat: 15.5234, lng: -88.0267 },
-  { name: 'Las Vegas Norte',         lat: 15.5245, lng: -88.0234 },
-  { name: 'Col. Fesitranh',          lat: 15.5289, lng: -88.0267 },
-  { name: 'Col. Los Andes',          lat: 15.5200, lng: -88.0345 },
-  { name: 'Col. Río Blanco',         lat: 15.5312, lng: -88.0156 },
-  { name: 'Col. 15 de Septiembre',   lat: 15.5189, lng: -88.0289 },
-  { name: 'Col. Torocagua Norte',    lat: 15.5223, lng: -88.0145 },
-  { name: 'Sector El Nance',         lat: 15.5400, lng: -88.0234 },
-  { name: 'Col. Río Bermejo',        lat: 15.5378, lng: -88.0189 },
-  // ── Sector Norte Profundo ──────────────────────
-  { name: 'Rivera Hernández Sector 2', lat: 15.5501, lng: -88.0378 },
-  { name: 'Rivera Hernández Sector 3', lat: 15.5534, lng: -88.0412 },
-  { name: 'Rivera Hernández Norte',    lat: 15.5567, lng: -88.0345 },
-  { name: 'Sector El Carmen Norte',    lat: 15.5489, lng: -88.0312 },
-  { name: 'Col. San Rafael Norte',     lat: 15.5556, lng: -88.0289 },
-  { name: 'Col. Villa Nueva',          lat: 15.5578, lng: -88.0323 },
-  { name: 'Aldea El Bijagual',         lat: 15.5589, lng: -88.0134 },
-  { name: 'Sector Las Brisas',         lat: 15.5512, lng: -88.0456 },
-  { name: 'Res. Monte Verde',          lat: 15.5534, lng: -88.0423 },
-  { name: 'Col. Brisas del Norte',     lat: 15.5489, lng: -88.0445 },
-  { name: 'Chamelecón Norte',          lat: 15.5501, lng: -88.0178 },
-  { name: 'Barrio Berlín',             lat: 15.5523, lng: -88.0145 },
-  { name: 'Col. Nueva Esperanza Norte', lat: 15.5478, lng: -88.0201 },
-  { name: 'Sector El Bermejo Norte',   lat: 15.5512, lng: -88.0167 },
-  { name: 'Col. San Isidro',           lat: 15.5545, lng: -88.0245 },
-  { name: 'Sector Cofradía',           lat: 15.5612, lng: -88.0512 },
-  { name: 'Sector La Línea',           lat: 15.5534, lng: -88.0178 },
-  { name: 'Col. Los Mangos',           lat: 15.5467, lng: -88.0201 },
-  // ── Sector Norte – Colonias y Barrios Adicionales ──
-  { name: 'Barrio Járagua',            lat: 15.5478, lng: -88.0112 },
-  { name: 'Res. Nova',                 lat: 15.5201, lng: -88.0212 },
-  { name: 'Col. Trópico',              lat: 15.5345, lng: -88.0289 },
-  { name: 'Col. Nueva Palestina',      lat: 15.5445, lng: -88.0267 },
-  { name: 'Col. Portal del Norte',     lat: 15.5423, lng: -88.0412 },
-  { name: 'Col. El Porvenir',          lat: 15.5334, lng: -88.0245 },
-  { name: 'Col. San Francisco Norte',  lat: 15.5356, lng: -88.0312 },
-  { name: 'Col. Las Torres',           lat: 15.5389, lng: -88.0289 },
-  { name: 'Barrio La Merced',          lat: 15.5289, lng: -88.0334 },
-  { name: 'Col. Villa Linda',          lat: 15.5312, lng: -88.0378 },
-  { name: 'Col. Santa Cruz Norte',     lat: 15.5456, lng: -88.0223 },
-  { name: 'Col. Brisas de Chamelecón', lat: 15.5534, lng: -88.0212 },
-  { name: 'Res. Country Hills',        lat: 15.5289, lng: -88.0201 },
-  { name: 'Col. El Rincón',            lat: 15.5412, lng: -88.0267 },
-  { name: 'Col. Las Margaritas',       lat: 15.5323, lng: -88.0156 },
-  { name: 'Barrio El Olvido',          lat: 15.5445, lng: -88.0289 },
-  // ── Sector Noroeste ────────────────────────────
-  { name: 'El Trapiche',             lat: 15.5234, lng: -88.0512 },
-  { name: 'La Granja',               lat: 15.5123, lng: -88.0456 },
-  { name: 'El Manchén',              lat: 15.5178, lng: -88.0389 },
-  { name: 'El Bosque',               lat: 15.5067, lng: -88.0489 },
-  { name: 'Santa Elena',             lat: 15.5089, lng: -88.0512 },
-  { name: 'Col. Altamira',           lat: 15.5167, lng: -88.0456 },
-  { name: 'Col. El Naranjal',        lat: 15.5156, lng: -88.0412 },
-  { name: 'Col. 21 de Octubre Occ.', lat: 15.5178, lng: -88.0467 },
-  { name: 'Col. San José Occ.',      lat: 15.5089, lng: -88.0478 },
-  { name: 'Sector La Ceibita',       lat: 15.5234, lng: -88.0545 },
-  // ── Sector Oeste ───────────────────────────────
-  { name: 'Villa España',            lat: 15.5012, lng: -88.0423 },
-  { name: 'Col. Castaño',            lat: 15.5078, lng: -88.0345 },
-  { name: 'Col. Los Robles',         lat: 15.5034, lng: -88.0389 },
-  { name: 'Col. Trejo',              lat: 15.5089, lng: -88.0423 },
-  { name: 'Col. Satélite',           lat: 15.5189, lng: -88.0378 },
-  { name: 'Los Alamos',              lat: 15.5123, lng: -88.0312 },
-  { name: 'Res. Los Pinos',          lat: 15.5145, lng: -88.0378 },
-  { name: 'Res. Real Los Pinos',     lat: 15.5145, lng: -88.0289 },
-  { name: 'Col. San José',           lat: 15.5023, lng: -88.0389 },
-  { name: 'Col. El Prado',           lat: 15.5023, lng: -88.0312 },
-  // ── Sector Centro-Este ─────────────────────────
-  { name: 'Villa Olímpica',          lat: 15.5134, lng: -88.0150 },
-  { name: 'Col. Torocagua',          lat: 15.5189, lng: -88.0145 },
-  { name: 'Col. Alameda',            lat: 15.5078, lng: -88.0156 },
-  { name: 'Col. Las Américas',       lat: 15.5112, lng: -88.0234 },
-  { name: 'Col. Las Flores',         lat: 15.5023, lng: -88.0178 },
-  { name: 'Col. Juan Lindo',         lat: 15.5089, lng: -88.0234 },
-  { name: 'Col. Primavera',          lat: 15.5123, lng: -88.0201 },
-  { name: 'Col. Los Laureles',       lat: 15.5056, lng: -88.0145 },
-  { name: 'Bella Vista',             lat: 15.5045, lng: -88.0201 },
-  { name: 'Col. Santa Rosa',         lat: 15.5067, lng: -88.0234 },
-  { name: 'Circunvalación',          lat: 15.5056, lng: -88.0312 },
-  { name: 'Col. Morazán',            lat: 15.5023, lng: -88.0267 },
-  { name: 'Col. Búfalo',             lat: 15.5089, lng: -88.0267 },
-  { name: 'Col. La Esperanza',       lat: 15.5012, lng: -88.0178 },
-  { name: 'Col. Los Pinos',          lat: 15.5145, lng: -88.0378 },
-  // ── Sector Este ────────────────────────────────
-  { name: 'La Joya',                 lat: 15.4978, lng: -88.0189 },
-  { name: 'Col. El Country',         lat: 15.4934, lng: -88.0156 },
-  { name: 'Col. Divanna',            lat: 15.4912, lng: -88.0178 },
-  { name: 'Col. Las Palmas Este',    lat: 15.5023, lng: -88.0112 },
-  { name: 'Col. Los Girasoles',      lat: 15.5056, lng: -88.0098 },
-  { name: 'Res. La Ceiba',           lat: 15.5089, lng: -88.0089 },
-  { name: 'Col. Miraflores',         lat: 15.4967, lng: -88.0112 },
-  { name: 'Col. Sinaí',              lat: 15.5012, lng: -88.0089 },
-  // ── Sector Sur ─────────────────────────────────
-  { name: 'Col. Kennedy',            lat: 15.4892, lng: -88.0351 },
-  { name: 'Suyapa',                  lat: 15.4845, lng: -88.0278 },
-  { name: 'Nueva Suyapa',            lat: 15.4812, lng: -88.0312 },
-  { name: 'Altos de Miraflores',     lat: 15.4878, lng: -88.0234 },
-  { name: 'Las Palmas',              lat: 15.4923, lng: -88.0412 },
-  { name: 'Col. La Guardia',         lat: 15.4945, lng: -88.0289 },
-  { name: 'Col. Santa Fe',           lat: 15.4989, lng: -88.0267 },
-  { name: 'Venecia',                 lat: 15.4956, lng: -88.0345 },
-  { name: 'Tepeyac',                 lat: 15.4967, lng: -88.0234 },
-  { name: 'Col. Morazan Sur',        lat: 15.4900, lng: -88.0267 },
-  { name: 'Col. El Sauce Sur',       lat: 15.4867, lng: -88.0345 },
-  { name: 'Res. Montecarlo',         lat: 15.4834, lng: -88.0234 },
-  { name: 'Col. La Pradera',         lat: 15.4912, lng: -88.0178 },
-  { name: 'Altos de Toncontín',      lat: 15.4845, lng: -88.0412 },
-];
-
-
-// ================== PAGE MANAGEMENT ==================
-function showPage(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const page = document.getElementById(id);
-  if (page) { page.classList.add('active'); window.scrollTo(0, 0); }
-  if (id === 'page-map') {
-    initLeafletMap();
-    setTimeout(() => { if (window._leafletMap) window._leafletMap.invalidateSize(); }, 100);
-  }
-}
-
-function goToHome() {
-  showPage('page-home');
-}
-
-// ================== PARTNER INQUIRY FORM ==================
-function submitPartnerForm(e) {
-  e.preventDefault();
-  var name    = document.getElementById('pf-name').value.trim();
-  var org     = document.getElementById('pf-org').value.trim();
-  var role    = document.getElementById('pf-role').value.trim();
-  var email   = document.getElementById('pf-email').value.trim();
-  var phone   = document.getElementById('pf-phone').value.trim();
-  var type    = document.getElementById('pf-type').value;
-  var message = document.getElementById('pf-message').value.trim();
-
-  var subject = encodeURIComponent('IsoClime Partnership Inquiry - ' + org);
-  var body = encodeURIComponent(
-    'Name: ' + name + '\n' +
-    'Organization / Institution: ' + org + '\n' +
-    'Position / Role: ' + (role || '-') + '\n' +
-    'Email: ' + email + '\n' +
-    'Phone: ' + (phone || '-') + '\n' +
-    'Type of Organization: ' + type + '\n\n' +
-    'Message:\n' + message
-  );
-  var mailto = 'mailto:Team1Isoclime@outlook.com?subject=' + subject + '&body=' + body;
-  if (mailto.length > 2000) {
-    alert('Your message is too long for automatic email. Please send it manually to Team1Isoclime@outlook.com');
-    return;
-  }
-  window.location.href = mailto;
-}
-
-// ================== MAP / ZONE SELECTION (Leaflet) ==================
-let _mapInitialized = false;
-let _activeSuggestionIndex = -1;
-
-function initLeafletMap() {
-  if (_mapInitialized) return;
-  _mapInitialized = true;
-
-  const map = L.map('leaflet-map', { zoomControl: true }).setView([15.5014, -88.0251], 13);
-  window._leafletMap = map;
-
-  // Light CartoDB tiles -- no API key required
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 19
-  }).addTo(map);
-
-  // Circle markers for each neighborhood
-  zones.forEach(z => {
-    const circle = L.circleMarker([z.lat, z.lng], {
-      radius: 7,
-      fillColor: '#0e7a50',
-      color: '#0e7a50',
-      weight: 1,
-      opacity: 0.7,
-      fillOpacity: 0.25
-    }).addTo(map);
-
-    circle.bindTooltip(z.name, {
-      permanent: false,
-      direction: 'top',
-      className: 'leaflet-tooltip-dark'
-    });
-
-    circle.on('click', () => selectZone(z.name, z.lat, z.lng));
-    circle.on('mouseover', function () {
-      this.setStyle({ fillOpacity: 0.6, weight: 2 });
-    });
-    circle.on('mouseout', function () {
-      if (currentZone !== z.name) this.setStyle({ fillOpacity: 0.25, weight: 1 });
-    });
-
-    z._circle = circle;
-  });
-}
-
-function selectZone(name, lat, lng) {
-  currentZone = name;
-
-  // Find matching zone record (may be called from autocomplete with name only)
-  const z = zones.find(z => z.name === name);
-  const zLat = lat !== undefined ? lat : (z ? z.lat : null);
-  const zLng = lng !== undefined ? lng : (z ? z.lng : null);
-
-  // Reset all markers
-  zones.forEach(zn => {
-    if (zn._circle) zn._circle.setStyle({ fillColor: '#0e7a50', color: '#0e7a50', fillOpacity: 0.25, weight: 1 });
-  });
-
-  // Highlight selected marker
-  if (z && z._circle) {
-    z._circle.setStyle({ fillColor: '#1a6eb8', color: '#1a6eb8', fillOpacity: 0.8, weight: 2 });
-    z._circle.openTooltip();
-  }
-
-  // Pan map to zone
-  if (window._leafletMap && zLat !== null) {
-    window._leafletMap.setView([zLat, zLng], 15, { animate: true });
-  }
-
-  // Update UI
-  document.getElementById('map-selected-zone').style.display = 'block';
-  document.getElementById('zone-name-display').textContent = name;
-  document.getElementById('neighborhood-input').value = name;
-  document.getElementById('start-survey-btn').disabled = false;
-  hideSuggestions();
-}
-
-function filterZones(val) {
-  // NFD decomposes accented chars into base + combining diacritics (then stripped),
-  // so e.g. "jar" matches "Járagua" and "hernandez" matches "Hernández"
-  const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const v = norm(val.trim());
-  const box = document.getElementById('zone-suggestions');
-  _activeSuggestionIndex = -1;
-
-  if (!v) { hideSuggestions(); return; }
-
-  const matches = zones.filter(z => norm(z.name).includes(v)).slice(0, 10);
-  if (matches.length === 0) { hideSuggestions(); return; }
-
-  box.innerHTML = '';
-  matches.forEach(z => {
-    const item = document.createElement('div');
-    item.className = 'suggestion-item';
-    // Bold the matching portion (search against normalized name, display original)
-    const idx = norm(z.name).indexOf(v);
-    item.innerHTML = z.name.slice(0, idx)
-      + '<strong>' + z.name.slice(idx, idx + v.length) + '</strong>'
-      + z.name.slice(idx + v.length);
-    item.addEventListener('mousedown', e => {
-      e.preventDefault(); // prevent blur before click
-      selectZone(z.name, z.lat, z.lng);
-    });
-    box.appendChild(item);
-  });
-
-  box.style.display = 'block';
-}
-
-function hideSuggestions() {
-  const box = document.getElementById('zone-suggestions');
-  box.style.display = 'none';
-  box.innerHTML = '';
-  _activeSuggestionIndex = -1;
-}
-
-function handleSuggestionKey(e) {
-  const box = document.getElementById('zone-suggestions');
-  const items = box.querySelectorAll('.suggestion-item');
-  if (!items.length) return;
-
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    _activeSuggestionIndex = Math.min(_activeSuggestionIndex + 1, items.length - 1);
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    _activeSuggestionIndex = Math.max(_activeSuggestionIndex - 1, 0);
-  } else if (e.key === 'Enter') {
-    e.preventDefault();
-    if (_activeSuggestionIndex >= 0) items[_activeSuggestionIndex].dispatchEvent(new Event('mousedown'));
-    return;
-  } else if (e.key === 'Escape') {
-    hideSuggestions(); return;
-  } else { return; }
-
-  items.forEach((el, i) => el.classList.toggle('active', i === _activeSuggestionIndex));
-}
-
-// Hide suggestions when focus leaves the input
-document.addEventListener('click', e => {
-  if (!e.target.closest('.search-wrapper')) hideSuggestions();
-});
-
-function startSurvey() {
-  if (!currentZone) return;
-  answers = {};
-  currentQuestionIndex = 0;
-  renderSteps();
-  renderQuestion();
-  showPage('page-questions');
-}
-
-// ================== QUESTION RENDERING ==================
-function renderSteps() {
-  const bar = document.getElementById('steps-bar');
-  bar.innerHTML = '';
-  questions.forEach((_, i) => {
-    const dot = document.createElement('div');
-    dot.className = 'step-dot';
-    if (i < currentQuestionIndex) dot.classList.add('completed');
-    if (i === currentQuestionIndex) dot.classList.add('active');
-    bar.appendChild(dot);
-  });
-  document.getElementById('q-counter').textContent = (currentQuestionIndex + 1) + ' / ' + questions.length;
-  document.getElementById('q-zone-label').textContent = '◈ ' + currentZone;
-}
-
-function renderQuestion() {
-  const q = questions[currentQuestionIndex];
-  const area = document.getElementById('question-area');
-
-  area.innerHTML = `
-    <div style="margin-bottom:1.5rem;">
-      <div style="font-family:'Orbitron',monospace;font-size:0.62rem;font-weight:700;color:var(--clr-muted);letter-spacing:0.2em;margin-bottom:0.4rem;">
-        QUESTION ${currentQuestionIndex + 1}
-      </div>
-      <h2 style="font-family:'Orbitron',monospace;font-size:1rem;font-weight:700;color:var(--clr-text);margin-bottom:0.4rem;">${q.title}</h2>
-      <p style="font-size:0.78rem;color:var(--clr-muted);">${q.subtitle}</p>
-    </div>
-    <div class="options-grid" id="options-grid-${q.id}"></div>
-  `;
-
-  const grid = document.getElementById('options-grid-' + q.id);
-  const currentVal = answers[q.id] || (q.type === 'multi' ? [] : null);
-
-  q.options.forEach(opt => {
-    const item = document.createElement('label');
-    item.className = 'option-item';
-
-    const isSelected = q.type === 'multi'
-      ? (Array.isArray(currentVal) && currentVal.includes(opt.value))
-      : currentVal === opt.value;
-
-    if (isSelected) item.classList.add('selected');
-
-    item.innerHTML = `
-      <input type="${q.type === 'multi' ? 'checkbox' : 'radio'}"
-             name="q-${q.id}"
-             value="${opt.value}"
-             ${isSelected ? 'checked' : ''} />
-      <span style="font-size:0.82rem;color:var(--clr-text);">${opt.label}</span>
-    `;
-
-    const input = item.querySelector('input');
-    input.addEventListener('change', () => handleAnswer(q, opt.value, input.checked));
-
-    grid.appendChild(item);
-  });
-
-  updateNextButton(q);
-}
-
-function handleAnswer(q, value, checked) {
-  if (q.type === 'multi') {
-    if (!Array.isArray(answers[q.id])) answers[q.id] = [];
-    if (checked) {
-      if (!answers[q.id].includes(value)) answers[q.id].push(value);
-    } else {
-      answers[q.id] = answers[q.id].filter(v => v !== value);
-    }
-  } else {
-    answers[q.id] = value;
-  }
-
-  // Update visual selection state
-  document.querySelectorAll(`input[name="q-${q.id}"]`).forEach(inp => {
-    inp.closest('.option-item').classList.toggle('selected', inp.checked);
-  });
-
-  updateNextButton(q);
-}
-
-function updateNextButton(q) {
-  const hasAnswer = answers[q.id] && (Array.isArray(answers[q.id]) ? answers[q.id].length > 0 : true);
-  document.getElementById('q-next-btn').disabled = !hasAnswer;
-}
-
-function nextQuestion() {
-  if (currentQuestionIndex < questions.length - 1) {
-    currentQuestionIndex++;
-    renderSteps();
-    renderQuestion();
-  } else {
-    generateResults();
-  }
-}
-
-function prevQuestion() {
-  if (currentQuestionIndex > 0) {
-    currentQuestionIndex--;
-    renderSteps();
-    renderQuestion();
-  }
-}
-
-// ================== RESULTS ==================
-function generateResults() {
-  showPage('page-results');
-  document.getElementById('result-zone-label').textContent = 'ZONA ANALIZADA: ' + currentZone;
-
-  // Score calculation based on answers
-  let riskScore = 0;
-  if (answers.issues) {
-    const issues = Array.isArray(answers.issues) ? answers.issues : [answers.issues];
-    if (issues.includes('Mold or fungus growth')) riskScore += 25;
-    if (issues.includes('Excessive humidity / dampness')) riskScore += 20;
-    if (issues.includes('Extreme heat indoors')) riskScore += 15;
-  }
-  if (answers.urgency) {
-    if (answers.urgency.includes('Critical')) riskScore += 20;
-    else if (answers.urgency.includes('High')) riskScore += 12;
-    else if (answers.urgency.includes('Medium')) riskScore += 6;
-  }
-  if (answers.electricity && answers.electricity.includes('significantly')) riskScore += 10;
-  if (answers.roof && (answers.roof.includes('cracks') || answers.roof.includes('zinc'))) riskScore += 10;
-  riskScore = Math.min(riskScore, 99);
-
-  // Animate score ring
-  setTimeout(() => {
-    const circumference = 239;
-    const offset = circumference - (riskScore / 100) * circumference;
-    const circle = document.getElementById('score-circle');
-    circle.style.strokeDashoffset = offset;
-    if (riskScore >= 60) circle.style.stroke = '#1a6eb8';
-    else if (riskScore >= 35) circle.style.stroke = '#c47a1a';
-    else circle.style.stroke = '#0e7a50';
-  }, 300);
-
-  document.getElementById('score-number').textContent = riskScore;
-
-  // Summary
-  let summaryTitle, summaryText;
-  if (riskScore >= 60) {
-    summaryTitle = '⚠ HIGH CLIMATE RISK DETECTED';
-    summaryText = 'Your zone shows significant climate stress indicators. Immediate action is recommended to prevent further health and structural damage. Our AI has identified critical intervention points.';
-  } else if (riskScore >= 30) {
-    summaryTitle = '◈ MODERATE CLIMATE RISK';
-    summaryText = 'Your zone shows moderate climate challenges. Targeted improvements can significantly improve comfort and reduce energy costs. Review the recommendations below.';
-  } else {
-    summaryTitle = '✓ LOW CLIMATE RISK';
-    summaryText = 'Your zone appears to be managing climate conditions well. The following recommendations will help you maintain this and optimize further for efficiency and comfort.';
-  }
-  document.getElementById('result-summary-title').textContent = summaryTitle;
-  document.getElementById('result-summary-text').textContent = summaryText;
-
-  // Build recommendations
-  const recs = buildRecommendations();
-  const container = document.getElementById('recommendations-container');
-  container.innerHTML = '';
-  recs.forEach((rec, i) => {
-    const card = document.createElement('div');
-    card.className = 'result-card fade-in ' + rec.priority;
-    card.style.animationDelay = (i * 0.1) + 's';
-    card.innerHTML = `
-      <div style="display:flex;align-items:flex-start;gap:12px;">
-        <div style="flex-shrink:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;">
-          <span style="font-family:'VT323',monospace;font-size:1.2rem;color:${rec.priority === 'priority-high' ? 'var(--clr-accent2)' : rec.priority === 'priority-med' ? 'var(--clr-warn)' : 'var(--clr-accent)'};">${rec.icon}</span>
-        </div>
-        <div>
-          <p style="font-family:'Orbitron',monospace;font-size:0.75rem;font-weight:700;color:var(--clr-text);margin-bottom:4px;">${rec.title}</p>
-          <p style="font-size:0.78rem;color:var(--clr-muted);line-height:1.6;">${rec.desc}</p>
-          ${rec.cost ? `<p style="font-family:'VT323',monospace;font-size:0.9rem;color:var(--clr-accent);margin-top:4px;">COSTO ESTIMADO: ${rec.cost}</p>` : ''}
-        </div>
-      </div>
-    `;
-    container.appendChild(card);
-  });
-
-  // Sensor data
-  const sensorGrid = document.getElementById('sensor-data-grid');
-  sensorGrid.innerHTML = '';
-  const sensorData = [
-    { label: 'TEMPERATURA', value: (32 + Math.random() * 5).toFixed(1) + '°C', color: 'var(--clr-accent2)' },
-    { label: 'HUMEDAD',     value: (75 + Math.random() * 15).toFixed(0) + '%', color: 'var(--clr-warn)' },
-    { label: 'ÍNDICE UV',   value: (8  + Math.random() * 3).toFixed(1),        color: 'var(--clr-accent)' },
-    { label: 'CALIDAD AIRE', value: 'MODERADA',                                 color: 'var(--clr-warn)' },
-  ];
-  sensorData.forEach(s => {
-    const div = document.createElement('div');
-    div.innerHTML = `
-      <div style="font-size:0.6rem;color:var(--clr-muted);letter-spacing:0.1em;margin-bottom:4px;">${s.label}</div>
-      <div style="font-family:'Orbitron',monospace;font-size:1.1rem;font-weight:700;color:${s.color};">${s.value}</div>
-    `;
-    sensorGrid.appendChild(div);
-  });
-
-  // Render risk breakdown chart
-  renderRiskChart(riskScore);
-
+  <script>
   lucide.createIcons();
-}
 
-function buildRecommendations() {
-  const recs = [];
-  const issues = answers.issues || [];
-  const budget = answers.budget || '';
-  const building = answers.building_type || '';
-  const sunlight = answers.sunlight || '';
-  const tried = answers.tried || [];
-
-  if (issues.includes('Mold or fungus growth') || issues.includes('Excessive humidity / dampness')) {
-    recs.push({
-      priority: 'priority-high',
-      icon: '◈',
-      title: 'ANTI-MOLD TREATMENT — IMMEDIATE',
-      desc: 'Apply antifungal paint or treatment to affected walls. Improve drainage and ensure no water leaks. Borax-based solutions are cost-effective and proven in tropical climates.',
-      cost: 'L. 300–800'
-    });
+  // Live clock
+  function updateClock() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    const el = document.getElementById('live-time');
+    if (el) el.textContent = `${h}:${m}:${s}`;
   }
+  updateClock();
+  setInterval(updateClock, 1000);
 
-  if (issues.includes('Extreme heat indoors') || sunlight.includes('6+') || sunlight.includes('Mornings')) {
-    recs.push({
-      priority: 'priority-high',
-      icon: '◑',
-      title: 'REFLECTIVE ROOF COATING',
-      desc: 'Apply white or aluminum-pigmented paint to your roof. This alone can reduce indoor temperature by 5–8°C in direct sun exposure zones. Works especially well on zinc roofs.',
-      cost: 'L. 1,200–3,500'
-    });
-  }
+  // Live data counter animation for stat3
+  let count = 1247;
+  setInterval(() => {
+    count += Math.floor(Math.random() * 4) + 1;
+    const el = document.getElementById('stat3-val');
+    if (el) el.textContent = count.toLocaleString();
+  }, 2200);
 
-  if (building.includes('Metal') || building.includes('zinc')) {
-    recs.push({
-      priority: 'priority-high',
-      icon: '▲',
-      title: 'THERMAL BARRIER INSTALLATION',
-      desc: 'Install a radiant barrier or foam insulation underneath your metal roof. This prevents heat transfer and dramatically cuts cooling costs. Critical for zinc/metal structure homes.',
-      cost: 'L. 2,500–6,000'
-    });
-  }
+  // Element SDK
+  const defaultConfig = {
+    background_color: '#060f0a',
+    surface_color: 'rgba(10,40,28,0.55)',
+    text_color: '#e0f5ee',
+    primary_color: '#34d399',
+    accent_color: '#06b6d4',
+    dashboard_title: 'Live Microclimate Sensor Network',
+    dashboard_subtitle: 'Real-time environmental monitoring',
+    zone1_label: 'Urban Road',
+    zone2_label: 'Aluminum Roof Houses',
+    zone3_label: 'Tree-Covered Area',
+    footer_stat1: '3 Sensors Active',
+    footer_stat2: '3 Zones Monitored',
+    footer_stat3: 'Live Data Streaming',
+    font_family: 'Space Grotesk',
+    font_size: 14
+  };
 
-  if (!tried.includes('Ventilation fans')) {
-    recs.push({
-      priority: 'priority-med',
-      icon: '◎',
-      title: 'CROSS-VENTILATION STRATEGY',
-      desc: 'Position fans to create cross-ventilation — inlet on shaded side, outlet on sun side. Use ceiling fans counterclockwise in summer. This can reduce felt temperature by 4°C with no added electricity.',
-      cost: 'L. 500–1,500'
-    });
-  }
+  window.elementSdk && window.elementSdk.init({
+    defaultConfig,
+    onConfigChange: async (config) => {
+      const dt = document.getElementById('dashboard-title');
+      if (dt) dt.textContent = config.dashboard_title || defaultConfig.dashboard_title;
 
-  if (answers.electricity && answers.electricity.includes('significantly')) {
-    recs.push({
-      priority: 'priority-med',
-      icon: '⚡',
-      title: 'ENERGY AUDIT — AC OPTIMIZATION',
-      desc: 'Set AC to 24–26°C and use timer mode. Clean filters monthly. If unit is over 8 years old, consider replacement — newer models use 40% less energy. Check for gaps around windows and doors.',
-      cost: 'L. 0–200 (maintenance)'
-    });
-  }
+      const ds = document.getElementById('dashboard-subtitle');
+      if (ds) ds.textContent = config.dashboard_subtitle || defaultConfig.dashboard_subtitle;
 
-  if (answers.household && (answers.household.includes('Young children') || answers.household.includes('Elderly'))) {
-    recs.push({
-      priority: 'priority-high',
-      icon: '⊕',
-      title: 'VULNERABLE RESIDENT PROTOCOL',
-      desc: 'Prioritize air quality for children and elderly — consider HEPA air purifiers for sleeping areas. Ensure hydration reminders are in place during peak heat hours (11am–4pm). Create a cool rest zone in the home.',
-      cost: 'L. 800–2,000'
-    });
-  }
+      const z1 = document.getElementById('z1-label');
+      if (z1) z1.textContent = config.zone1_label || defaultConfig.zone1_label;
+      const z2 = document.getElementById('z2-label');
+      if (z2) z2.textContent = config.zone2_label || defaultConfig.zone2_label;
+      const z3 = document.getElementById('z3-label');
+      if (z3) z3.textContent = config.zone3_label || defaultConfig.zone3_label;
 
-  recs.push({
-    priority: '',
-    icon: '◷',
-    title: 'ISOCLIME SENSOR ALERT SUBSCRIPTION',
-    desc: 'Subscribe to receive SMS or WhatsApp alerts when your zone sensors detect dangerous humidity or heat spikes. Early warnings help you act before conditions worsen.',
-    cost: 'Gratis — Servicio ISOCLIME'
+      const mz1 = document.getElementById('map-z1');
+      if (mz1) mz1.textContent = config.zone1_label || defaultConfig.zone1_label;
+      const mz2 = document.getElementById('map-z2');
+      if (mz2) mz2.textContent = config.zone2_label || defaultConfig.zone2_label;
+      const mz3 = document.getElementById('map-z3');
+      if (mz3) mz3.textContent = config.zone3_label || defaultConfig.zone3_label;
+
+      // Footer stats
+      const s1parts = (config.footer_stat1 || defaultConfig.footer_stat1).split(' ');
+      const s1val = document.getElementById('stat1-val');
+      const s1lab = document.getElementById('stat1-label');
+      if (s1val) s1val.textContent = s1parts[0];
+      if (s1lab) s1lab.textContent = s1parts.slice(1).join(' ');
+
+      const s2parts = (config.footer_stat2 || defaultConfig.footer_stat2).split(' ');
+      const s2val = document.getElementById('stat2-val');
+      const s2lab = document.getElementById('stat2-label');
+      if (s2val) s2val.textContent = s2parts[0];
+      if (s2lab) s2lab.textContent = s2parts.slice(1).join(' ');
+
+      const s3lab = document.getElementById('stat3-label');
+      if (s3lab) s3lab.textContent = config.footer_stat3 || defaultConfig.footer_stat3;
+
+      // Colors
+      const pc = config.primary_color || defaultConfig.primary_color;
+      document.documentElement.style.setProperty('--primary', pc);
+
+      // Font
+      const ff = config.font_family || defaultConfig.font_family;
+      const fs = config.font_size || defaultConfig.font_size;
+      document.body.style.fontFamily = `'${ff}', 'Space Grotesk', sans-serif`;
+      document.body.style.fontSize = `${fs}px`;
+    },
+    mapToCapabilities: (config) => ({
+      recolorables: [
+        {
+          get: () => config.background_color || defaultConfig.background_color,
+          set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); }
+        },
+        {
+          get: () => config.surface_color || defaultConfig.surface_color,
+          set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); }
+        },
+        {
+          get: () => config.text_color || defaultConfig.text_color,
+          set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); }
+        },
+        {
+          get: () => config.primary_color || defaultConfig.primary_color,
+          set: (v) => { config.primary_color = v; window.elementSdk.setConfig({ primary_color: v }); }
+        },
+        {
+          get: () => config.accent_color || defaultConfig.accent_color,
+          set: (v) => { config.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); }
+        }
+      ],
+      borderables: [],
+      fontEditable: {
+        get: () => config.font_family || defaultConfig.font_family,
+        set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); }
+      },
+      fontSizeable: {
+        get: () => config.font_size || defaultConfig.font_size,
+        set: (v) => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); }
+      }
+    }),
+    mapToEditPanelValues: (config) => new Map([
+      ['dashboard_title',    config.dashboard_title    || defaultConfig.dashboard_title],
+      ['dashboard_subtitle', config.dashboard_subtitle || defaultConfig.dashboard_subtitle],
+      ['zone1_label',        config.zone1_label        || defaultConfig.zone1_label],
+      ['zone2_label',        config.zone2_label        || defaultConfig.zone2_label],
+      ['zone3_label',        config.zone3_label        || defaultConfig.zone3_label],
+      ['footer_stat1',       config.footer_stat1       || defaultConfig.footer_stat1],
+      ['footer_stat2',       config.footer_stat2       || defaultConfig.footer_stat2],
+      ['footer_stat3',       config.footer_stat3       || defaultConfig.footer_stat3],
+    ])
   });
-
-  recs.push({
-    priority: '',
-    icon: '◈',
-    title: 'COMMUNITY SHADE INFRASTRUCTURE',
-    desc: 'Connect with your neighborhood association to plant shade trees along streets. Cities with 30%+ canopy cover average 3°C cooler than open zones. ISOCLIME can map optimal planting zones.',
-    cost: 'L. 0 (programa comunitario)'
-  });
-
-  return recs.slice(0, 5);
-}
-
-function restartApp() {
-  currentZone = '';
-  answers = {};
-  currentQuestionIndex = 0;
-  document.getElementById('neighborhood-input').value = '';
-  document.getElementById('map-selected-zone').style.display = 'none';
-  hideSuggestions();
-
-  // Reset all map markers to default style
-  zones.forEach(z => {
-    if (z._circle) z._circle.setStyle({ fillColor: '#0e7a50', color: '#0e7a50', fillOpacity: 0.25, weight: 1 });
-  });
-  // Re-center map on San Pedro Sula
-  if (window._leafletMap) window._leafletMap.setView([15.5014, -88.0251], 13, { animate: true });
-
-  goToHome();
-}
-
-// ================== ELEMENT SDK ==================
-const defaultConfig = {
-  app_title: 'ISOCLIME',
-  tagline: 'DETECT. DEFLECT. PROTECT.',
-  cta_button: 'SEARCH YOUR ZONE',
-  background_color: '#41c9a2',
-  surface_color: '#ffffff',
-  accent_color: '#0e7a50',
-  accent2_color: '#1a6eb8',
-  text_color: '#0c2b1e',
-};
-
-window.elementSdk.init({
-  defaultConfig,
-  onConfigChange: async (config) => {
-    // App title — update both glitch h1 and logo img alt
-    const titleEl = document.getElementById('isoclime-title');
-    const logoImg = document.getElementById('isoclime-logo');
-    const titleText = config.app_title || defaultConfig.app_title;
-    if (titleEl) { titleEl.textContent = titleText; titleEl.setAttribute('data-text', titleText); }
-    if (logoImg) logoImg.setAttribute('alt', titleText);
-
-    // Tagline
-    const taglineEl = document.getElementById('tagline-text');
-    if (taglineEl) taglineEl.textContent = config.tagline || defaultConfig.tagline;
-
-    // CTA button
-    const ctaBtn = document.getElementById('cta-btn');
-    if (ctaBtn) ctaBtn.textContent = '▶ ' + (config.cta_button || defaultConfig.cta_button);
-
-    // Colors via CSS variables
-    const root = document.documentElement;
-    root.style.setProperty('--clr-bg',      config.background_color || defaultConfig.background_color);
-    root.style.setProperty('--clr-surface',  config.surface_color    || defaultConfig.surface_color);
-    root.style.setProperty('--clr-accent',   config.accent_color     || defaultConfig.accent_color);
-    root.style.setProperty('--clr-accent2',  config.accent2_color    || defaultConfig.accent2_color);
-    root.style.setProperty('--clr-text',     config.text_color       || defaultConfig.text_color);
-  },
-  mapToCapabilities: (config) => ({
-    recolorables: [
-      {
-        get: () => config.background_color || defaultConfig.background_color,
-        set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); }
-      },
-      {
-        get: () => config.surface_color || defaultConfig.surface_color,
-        set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); }
-      },
-      {
-        get: () => config.text_color || defaultConfig.text_color,
-        set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); }
-      },
-      {
-        get: () => config.accent_color || defaultConfig.accent_color,
-        set: (v) => { config.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); }
-      },
-      {
-        get: () => config.accent2_color || defaultConfig.accent2_color,
-        set: (v) => { config.accent2_color = v; window.elementSdk.setConfig({ accent2_color: v }); }
-      },
-    ],
-    borderables: [],
-    fontEditable: undefined,
-    fontSizeable: undefined,
-  }),
-  mapToEditPanelValues: (config) => new Map([
-    ['app_title', config.app_title || defaultConfig.app_title],
-    ['tagline',   config.tagline   || defaultConfig.tagline],
-    ['cta_button', config.cta_button || defaultConfig.cta_button],
-  ])
-});
-
-// ================== RISK CHART ==================
-const MAX_HUMIDITY_RISK = 45;
-
-function renderRiskChart(totalScore) {
-  const chartEl = document.getElementById('risk-chart');
-  if (!chartEl) return;
-
-  const factors = [
-    {
-      label: 'MOLD / HUMIDITY',
-      value: (() => {
-        let v = 0;
-        const iss = answers.issues || [];
-        if (iss.includes('Mold or fungus growth')) v += 25;
-        if (iss.includes('Excessive humidity / dampness')) v += 20;
-        return Math.min(v, MAX_HUMIDITY_RISK);
-      })(),
-      max: MAX_HUMIDITY_RISK,
-      color: 'var(--clr-accent2)'
-    },
-    {
-      label: 'URGENCY',
-      value: (() => {
-        if (!answers.urgency) return 0;
-        if (answers.urgency.includes('Critical')) return 20;
-        if (answers.urgency.includes('High')) return 12;
-        if (answers.urgency.includes('Medium')) return 6;
-        return 0;
-      })(),
-      max: 20,
-      color: 'var(--clr-warn)'
-    },
-    {
-      label: 'HEAT INDOORS',
-      value: (answers.issues || []).includes('Extreme heat indoors') ? 15 : 0,
-      max: 15,
-      color: 'var(--clr-accent2)'
-    },
-    {
-      label: 'ENERGY USAGE',
-      value: (answers.electricity && answers.electricity.includes('significantly')) ? 10 : 0,
-      max: 10,
-      color: 'var(--clr-warn)'
-    },
-    {
-      label: 'ROOF / STRUCTURE',
-      value: (answers.roof && (answers.roof.includes('cracks') || answers.roof.includes('zinc'))) ? 10 : 0,
-      max: 10,
-      color: 'var(--clr-accent)'
-    },
-  ];
-
-  chartEl.innerHTML = '';
-  factors.forEach(f => {
-    const pct = f.max > 0 ? Math.round((f.value / f.max) * 100) : 0;
-    const row = document.createElement('div');
-    row.className = 'bar-row';
-    row.innerHTML = `
-      <div class="bar-label">${f.label}</div>
-      <div class="bar-track">
-        <div class="bar-fill" data-pct="${pct}" style="background:${f.color};width:0%;"></div>
-      </div>
-      <div class="bar-value" style="color:${f.color};">${f.value}</div>
-    `;
-    chartEl.appendChild(row);
-  });
-
-  // Animate bars after a brief delay
-  setTimeout(() => {
-    chartEl.querySelectorAll('.bar-fill').forEach(bar => {
-      bar.style.width = bar.dataset.pct + '%';
-    });
-  }, 400);
-}
-
-// ================== PRINT REPORT ==================
-function printReport() {
-  window.print();
-}
-
-// ================== ANIMATED COUNTER ==================
-const HOME_STAT_HOUSEHOLDS = 1240;
-const HOME_STAT_SATISFACTION = 89;
-
-function animateCounter(el, target, duration, suffix) {
-  if (!el) return;
-  const startTime = performance.now();
-  function step(now) {
-    const elapsed = now - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    el.textContent = Math.floor(progress * target).toLocaleString() + (suffix || '');
-    if (progress < 1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
-
-// ================== INIT ==================
-lucide.createIcons();
-// Set real zones count with animation
-const zonesCountEl = document.getElementById('zones-count');
-if (zonesCountEl) animateCounter(zonesCountEl, zones.length, 1200, '');
-animateCounter(document.getElementById('households-count'), HOME_STAT_HOUSEHOLDS, 1500, '');
-animateCounter(document.getElementById('satisfaction-count'), HOME_STAT_SATISFACTION, 1800, '%');
-
-
-</script>
-</body>
+  </script>
+ </body>
 </html>
