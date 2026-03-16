@@ -253,6 +253,8 @@
       ESP32 must serve <span style="color:#059669;">GET /data</span> → <span style="color:#0d9488;">{"z1":29.4,"z2":31.8,"z3":26.1,"ctrl_temp":28.7,"ctrl_hum":76}</span>
       &nbsp;·&nbsp; WebSocket: <span style="color:#059669;">ws://{ip}/ws</span> — same JSON
      </div>
+      <!-- Inline error / info message (shown by JS) -->
+      <div id="conn-msg" style="width:100%; display:none; font-size:11px; font-family:'JetBrains Mono',monospace; padding:6px 10px; margin-top:4px; border-radius:8px;"></div>
     </div>
    </div>
 
@@ -707,7 +709,9 @@
   setInterval(updateClock, 1000);
 
   // ─── ESP32 live-data engine ───────────────────────────────────────────────
-  // History: up to 11 readings per zone (chart shows 11 points across 520px)
+  // History: rolling window of the last 11 readings per zone.
+  // 11 points map evenly to the 520 px chart width (step = 520/10 = 52 px),
+  // matching the original hourly x-axis labels (08:00…18:00).
   const HIST_MAX = 11;
   const history = { z1: [], z2: [], z3: [] };
 
@@ -951,17 +955,31 @@
     applyData({ ...demoState });
   }
 
-  function setStatus(state, text) {
+  function setStatus(state, text, msg) {
     const dot  = document.getElementById('cs-dot');
     const stxt = document.getElementById('cs-text');
     const live = document.getElementById('live-label');
     const node = document.getElementById('node-status');
+    const msgEl = document.getElementById('conn-msg');
     if (dot)  { dot.className = `conn-status-dot conn-${state}`; }
     if (stxt) stxt.textContent = text;
     if (live) live.textContent = state === 'live' ? 'LIVE' : 'DEMO';
     if (node) node.textContent = state === 'live'
       ? `ESP32 · ${(document.getElementById('esp32-ip')||{value:'???'}).value} · CONNECTED`
       : 'ESP32 · NODE_001 · DEMO';
+    if (msgEl) {
+      if (msg) {
+        msgEl.textContent = msg;
+        msgEl.style.display = 'block';
+        msgEl.style.background = state === 'error'
+          ? 'rgba(239,68,68,0.1)' : 'rgba(52,211,153,0.08)';
+        msgEl.style.color = state === 'error' ? '#dc2626' : '#059669';
+        msgEl.style.border = state === 'error'
+          ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(52,211,153,0.2)';
+      } else {
+        msgEl.style.display = 'none';
+      }
+    }
   }
 
   function stopAll() {
@@ -979,36 +997,40 @@
   }
 
   function startHttp(ip, ms) {
-    setStatus('connecting', 'CONNECTING…');
+    setStatus('connecting', 'CONNECTING…', null);
     // Try first fetch immediately
     httpFetch(ip).then(data => {
-      setStatus('live', 'LIVE — HTTP');
+      setStatus('live', 'LIVE — HTTP', null);
       liveMode = true;
       applyData(data);
       pollTimer = setInterval(async () => {
         try {
           const d = await httpFetch(ip);
           applyData(d);
+          setStatus('live', 'LIVE — HTTP', null); // clear any previous error
         } catch(e) {
-          setStatus('error', 'RECONNECTING…');
+          setStatus('error', 'RECONNECTING…', 'Lost connection — retrying…');
         }
       }, ms);
     }).catch(err => {
-      setStatus('error', `ERROR: ${err.message}`);
+      const friendly = err.name === 'TimeoutError' || /timeout/i.test(err.message)
+        ? `Connection timed out. Check that the ESP32 at ${ip} is online and serving GET /data.`
+        : `Could not reach ESP32 at ${ip}. Check the IP address and that the device is on the same network.`;
+      setStatus('error', 'CONN. FAILED', friendly);
     });
   }
 
   // ── WebSocket ─────────────────────────────────────────────────────────────
   function startWS(ip) {
-    setStatus('connecting', 'CONNECTING…');
+    setStatus('connecting', 'CONNECTING…', null);
     const ws = new WebSocket(`ws://${ip}/ws`);
     wsConn = ws;
-    ws.onopen  = () => { setStatus('live', 'LIVE — WS'); liveMode = true; };
+    ws.onopen  = () => { setStatus('live', 'LIVE — WS', null); liveMode = true; };
     ws.onmessage = e => {
       try { applyData(JSON.parse(e.data)); } catch(ex) { console.warn('WS parse error', ex); }
     };
-    ws.onerror = () => setStatus('error', 'WS ERROR');
-    ws.onclose = () => { if (liveMode) { setStatus('error', 'WS CLOSED'); liveMode = false; } };
+    ws.onerror = () => setStatus('error', 'WS ERROR', `WebSocket error connecting to ${ip}. Check the device is online and CORS / firewall settings.`);
+    ws.onclose = () => { if (liveMode) { setStatus('error', 'WS CLOSED', 'WebSocket connection closed — refresh to reconnect.'); liveMode = false; } };
   }
 
   // ── Public controls ───────────────────────────────────────────────────────
@@ -1020,14 +1042,17 @@
     localStorage.setItem('esp32_ip', esp32Ip);
     localStorage.setItem('esp32_poll', pollMs);
     localStorage.setItem('esp32_transport', transport);
-    if (!esp32Ip) { alert('Please enter the ESP32 IP address.'); return; }
+    if (!esp32Ip) {
+      setStatus('error', 'NO IP', 'Please enter the ESP32 IP address (e.g. 192.168.1.42).');
+      return;
+    }
     if (transport === 'ws') startWS(esp32Ip);
     else startHttp(esp32Ip, pollMs);
   }
 
   function esp32Demo() {
     stopAll();
-    setStatus('demo', 'DEMO MODE');
+    setStatus('demo', 'DEMO MODE', null);
     pollMs = parseInt((document.getElementById('esp32-poll')||{value:'2000'}).value, 10);
     demoTick();
     pollTimer = setInterval(demoTick, pollMs);
