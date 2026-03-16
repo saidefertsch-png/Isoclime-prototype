@@ -150,6 +150,19 @@
 
     /* Logo leaf SVG colour */
     .logo-leaf { fill: #16a34a; }
+
+    /* ── ESP32 Connection bar ── */
+    #conn-bar input { outline: none; }
+    #conn-bar input:focus { border-color: rgba(52,211,153,0.6) !important; }
+    .conn-status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
+    .conn-demo       { background:#6b7280; box-shadow:0 0 6px #6b7280; }
+    .conn-connecting { background:#f59e0b; box-shadow:0 0 6px #f59e0b; animation:pulse-anim 1s ease infinite; }
+    .conn-live       { background:#16a34a; box-shadow:0 0 8px #16a34a; animation:pulse-anim 1.8s ease-in-out infinite; }
+    .conn-error      { background:#ef4444; box-shadow:0 0 6px #ef4444; }
+
+    /* Value flash on update */
+    @keyframes flashVal { 0%{color:#34d399} 100%{color:inherit} }
+    .val-flash { animation: flashVal .6s ease; }
   </style>
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
@@ -184,7 +197,7 @@
       </div>
       <div style="display:flex; align-items:center; gap:8px; background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.3); border-radius:99px; padding:6px 14px;">
        <span class="pulse-dot"></span>
-       <span style="font-size:12px; font-weight:600; color:#047857; font-family:'JetBrains Mono',monospace;">LIVE</span>
+       <span id="live-label" style="font-size:12px; font-weight:600; color:#047857; font-family:'JetBrains Mono',monospace;">DEMO</span>
       </div>
       <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#0d7377; opacity:0.8;" id="live-time">
        --:--:--
@@ -193,8 +206,58 @@
     </div>
    </header>
 
+   <!-- ═══════════════════ ESP32 CONNECTION BAR ═══════════════════ -->
+   <div id="conn-bar" style="padding:10px 32px 0; max-width:1400px; margin:0 auto;">
+    <div class="glass" style="border-radius:14px; padding:14px 20px; display:flex; align-items:center; flex-wrap:wrap; gap:12px;">
+     <!-- Status -->
+     <div style="display:flex; align-items:center; gap:7px; flex-shrink:0;">
+      <span id="cs-dot" class="conn-status-dot conn-demo"></span>
+      <span id="cs-text" style="font-size:11px; font-family:'JetBrains Mono',monospace; color:#0d7377; font-weight:600; letter-spacing:.06em;">DEMO MODE</span>
+     </div>
+     <div style="width:1px; height:24px; background:rgba(52,211,153,0.2); flex-shrink:0;"></div>
+     <!-- IP input -->
+     <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:200px;">
+      <i data-lucide="wifi" style="width:14px; height:14px; color:#34d399; flex-shrink:0;"></i>
+      <span style="font-size:11px; color:#0d7377; white-space:nowrap;">ESP32 IP</span>
+      <input id="esp32-ip" type="text" placeholder="192.168.1.xxx" value=""
+       style="flex:1; max-width:160px; background:rgba(52,211,153,0.06); border:1px solid rgba(52,211,153,0.25); border-radius:8px; padding:5px 10px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#0f2f28;" />
+     </div>
+     <!-- Poll interval -->
+     <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-size:11px; color:#0d7377; white-space:nowrap;">Poll</span>
+      <select id="esp32-poll" style="background:rgba(52,211,153,0.06); border:1px solid rgba(52,211,153,0.25); border-radius:8px; padding:5px 8px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#0f2f28; cursor:pointer;">
+       <option value="1000">1 s</option>
+       <option value="2000" selected>2 s</option>
+       <option value="5000">5 s</option>
+       <option value="10000">10 s</option>
+      </select>
+     </div>
+     <!-- Transport -->
+     <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-size:11px; color:#0d7377; white-space:nowrap;">Via</span>
+      <select id="esp32-transport" style="background:rgba(52,211,153,0.06); border:1px solid rgba(52,211,153,0.25); border-radius:8px; padding:5px 8px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#0f2f28; cursor:pointer;">
+       <option value="http">HTTP</option>
+       <option value="ws">WebSocket</option>
+      </select>
+     </div>
+     <!-- Buttons -->
+     <button onclick="esp32Connect()" style="background:linear-gradient(135deg,#059669,#0d9488); color:#fff; border:none; border-radius:9px; padding:7px 16px; font-size:12px; font-weight:600; cursor:pointer; font-family:'Space Grotesk',sans-serif;">Connect</button>
+     <button onclick="esp32Demo()" style="background:rgba(100,116,139,0.12); color:#374151; border:1px solid rgba(100,116,139,0.2); border-radius:9px; padding:7px 16px; font-size:12px; font-weight:600; cursor:pointer; font-family:'Space Grotesk',sans-serif;">Demo</button>
+     <!-- Last update -->
+     <div style="margin-left:auto; display:flex; align-items:center; gap:5px; opacity:.7;">
+      <i data-lucide="refresh-cw" style="width:11px; height:11px; color:#34d399;"></i>
+      <span id="last-update" style="font-size:10px; font-family:'JetBrains Mono',monospace; color:#0d7377;">--</span>
+     </div>
+     <!-- Hint -->
+     <div style="width:100%; font-size:10px; color:#0d7377; opacity:.6; font-family:'JetBrains Mono',monospace; padding-top:2px;">
+      ESP32 must serve <span style="color:#059669;">GET /data</span> → <span style="color:#0d9488;">{"z1":29.4,"z2":31.8,"z3":26.1,"ctrl_temp":28.7,"ctrl_hum":76}</span>
+      &nbsp;·&nbsp; WebSocket: <span style="color:#059669;">ws://{ip}/ws</span> — same JSON
+     </div>
+    </div>
+   </div>
+
    <!-- ═══════════════════ MAIN GRID ═══════════════════ -->
-   <main style="padding: 22px 32px 28px; max-width: 1400px; margin: 0 auto;">
+   <main style="padding: 14px 32px 28px; max-width: 1400px; margin: 0 auto;">
 
     <!-- ROW 1: Zone cards + Control card -->
     <div style="display: grid; grid-template-columns: repeat(3, 1fr) 1.15fr; gap: 18px; margin-bottom: 18px;">
@@ -212,11 +275,11 @@
        </div>
       </div>
       <div style="font-size:42px; font-weight:700; letter-spacing:-0.03em; color:#0f2f28; line-height:1;" class="mono text-glow">
-       29.4<span style="font-size:20px; color:#34d399;">°C</span>
+       <span id="z1-temp">29.4</span><span style="font-size:20px; color:#34d399;">°C</span>
       </div>
       <div style="display:flex; align-items:center; gap:6px; margin-top:8px; margin-bottom:14px;">
-       <span class="heat-badge" style="background:rgba(239,68,68,0.12); color:#dc2626; border:1px solid rgba(239,68,68,0.25);">HIGH</span>
-       <span style="font-size:11px; color:#0d7377; opacity:0.8; font-family:'JetBrains Mono',monospace;">▲ +1.2°C / hr</span>
+       <span id="z1-badge" class="heat-badge" style="background:rgba(239,68,68,0.12); color:#dc2626; border:1px solid rgba(239,68,68,0.25);">HIGH</span>
+       <span id="z1-trend" style="font-size:11px; color:#0d7377; opacity:0.8; font-family:'JetBrains Mono',monospace;">▲ +1.2°C / hr</span>
       </div>
       <!-- Sparkline -->
       <svg width="100%" height="40" viewBox="0 0 160 40" preserveAspectRatio="none" style="overflow:visible;">
@@ -226,8 +289,8 @@
          <stop offset="100%" stop-color="#34d399" stop-opacity="0" />
         </linearGradient>
        </defs>
-       <path d="M0,32 L20,28 L40,30 L60,22 L80,25 L100,18 L120,20 L140,14 L160,12" stroke="#34d399" stroke-width="2" fill="none" class="spark-path" />
-       <path d="M0,32 L20,28 L40,30 L60,22 L80,25 L100,18 L120,20 L140,14 L160,12 L160,40 L0,40Z" fill="url(#sg1)" />
+       <path id="spark1-line" d="M0,32 L20,28 L40,30 L60,22 L80,25 L100,18 L120,20 L140,14 L160,12" stroke="#34d399" stroke-width="2" fill="none" class="spark-path" />
+       <path id="spark1-fill" d="M0,32 L20,28 L40,30 L60,22 L80,25 L100,18 L120,20 L140,14 L160,12 L160,40 L0,40Z" fill="url(#sg1)" />
       </svg>
      </div>
 
@@ -244,11 +307,11 @@
        </div>
       </div>
       <div style="font-size:42px; font-weight:700; letter-spacing:-0.03em; color:#0f2f28; line-height:1;" class="mono text-glow">
-       31.8<span style="font-size:20px; color:#14b8a6;">°C</span>
+       <span id="z2-temp">31.8</span><span style="font-size:20px; color:#14b8a6;">°C</span>
       </div>
       <div style="display:flex; align-items:center; gap:6px; margin-top:8px; margin-bottom:14px;">
-       <span class="heat-badge" style="background:rgba(239,68,68,0.18); color:#f87171; border:1px solid rgba(239,68,68,0.3);">ELEVATED</span>
-       <span style="font-size:11px; color:#0d7377; opacity:0.8; font-family:'JetBrains Mono',monospace;">▲ +2.1°C / hr</span>
+       <span id="z2-badge" class="heat-badge" style="background:rgba(239,68,68,0.18); color:#f87171; border:1px solid rgba(239,68,68,0.3);">ELEVATED</span>
+       <span id="z2-trend" style="font-size:11px; color:#0d7377; opacity:0.8; font-family:'JetBrains Mono',monospace;">▲ +2.1°C / hr</span>
       </div>
       <svg width="100%" height="40" viewBox="0 0 160 40" preserveAspectRatio="none" style="overflow:visible;">
        <defs>
@@ -257,8 +320,8 @@
          <stop offset="100%" stop-color="#14b8a6" stop-opacity="0" />
         </linearGradient>
        </defs>
-       <path d="M0,30 L20,26 L40,28 L60,20 L80,16 L100,12 L120,10 L140,8 L160,6" stroke="#14b8a6" stroke-width="2" fill="none" class="spark-path" style="animation-delay:0.3s;" />
-       <path d="M0,30 L20,26 L40,28 L60,20 L80,16 L100,12 L120,10 L140,8 L160,6 L160,40 L0,40Z" fill="url(#sg2)" />
+       <path id="spark2-line" d="M0,30 L20,26 L40,28 L60,20 L80,16 L100,12 L120,10 L140,8 L160,6" stroke="#14b8a6" stroke-width="2" fill="none" class="spark-path" style="animation-delay:0.3s;" />
+       <path id="spark2-fill" d="M0,30 L20,26 L40,28 L60,20 L80,16 L100,12 L120,10 L140,8 L160,6 L160,40 L0,40Z" fill="url(#sg2)" />
       </svg>
      </div>
 
@@ -275,11 +338,11 @@
        </div>
       </div>
       <div style="font-size:42px; font-weight:700; letter-spacing:-0.03em; color:#0f2f28; line-height:1;" class="mono text-glow">
-       26.1<span style="font-size:20px; color:#06b6d4;">°C</span>
+       <span id="z3-temp">26.1</span><span style="font-size:20px; color:#06b6d4;">°C</span>
       </div>
       <div style="display:flex; align-items:center; gap:6px; margin-top:8px; margin-bottom:14px;">
-       <span class="heat-badge" style="background:rgba(52,211,153,0.12); color:#86efac; border:1px solid rgba(52,211,153,0.25);">COOL</span>
-       <span style="font-size:11px; color:#0d7377; opacity:0.8; font-family:'JetBrains Mono',monospace;">▼ −0.4°C / hr</span>
+       <span id="z3-badge" class="heat-badge" style="background:rgba(52,211,153,0.12); color:#86efac; border:1px solid rgba(52,211,153,0.25);">COOL</span>
+       <span id="z3-trend" style="font-size:11px; color:#0d7377; opacity:0.8; font-family:'JetBrains Mono',monospace;">▼ −0.4°C / hr</span>
       </div>
       <svg width="100%" height="40" viewBox="0 0 160 40" preserveAspectRatio="none" style="overflow:visible;">
        <defs>
@@ -288,8 +351,8 @@
          <stop offset="100%" stop-color="#06b6d4" stop-opacity="0" />
         </linearGradient>
        </defs>
-       <path d="M0,18 L20,22 L40,20 L60,24 L80,22 L100,26 L120,24 L140,28 L160,30" stroke="#06b6d4" stroke-width="2" fill="none" class="spark-path" style="animation-delay:0.6s;" />
-       <path d="M0,18 L20,22 L40,20 L60,24 L80,22 L100,26 L120,24 L140,28 L160,30 L160,40 L0,40Z" fill="url(#sg3)" />
+       <path id="spark3-line" d="M0,18 L20,22 L40,20 L60,24 L80,22 L100,26 L120,24 L140,28 L160,30" stroke="#06b6d4" stroke-width="2" fill="none" class="spark-path" style="animation-delay:0.6s;" />
+       <path id="spark3-fill" d="M0,18 L20,22 L40,20 L60,24 L80,22 L100,26 L120,24 L140,28 L160,30 L160,40 L0,40Z" fill="url(#sg3)" />
       </svg>
      </div>
 
@@ -311,7 +374,7 @@
         <i data-lucide="flame" style="width:15px;height:15px;color:#34d399;"></i>
         <span style="font-size:12px; color:#0d9488; font-weight:500;">Temperature</span>
        </div>
-       <span style="font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; color:#0f2f28;">28.7<span style="font-size:13px; color:#34d399;">°C</span></span>
+       <span style="font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; color:#0f2f28;"><span id="ctrl-temp">28.7</span><span style="font-size:13px; color:#34d399;">°C</span></span>
       </div>
       <!-- Humidity row -->
       <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(20,184,166,0.06); border:1px solid rgba(20,184,166,0.12); border-radius:10px; padding:10px 14px; margin-bottom:14px;">
@@ -319,22 +382,22 @@
         <i data-lucide="droplets" style="width:15px;height:15px;color:#14b8a6;"></i>
         <span style="font-size:12px; color:#0d8084; font-weight:500;">Humidity</span>
        </div>
-       <span style="font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; color:#0f2f28;">76<span style="font-size:13px; color:#14b8a6;">%</span></span>
+       <span style="font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; color:#0f2f28;"><span id="ctrl-hum">76</span><span style="font-size:13px; color:#14b8a6;">%</span></span>
       </div>
       <!-- Humidity bar -->
       <div>
        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
         <span style="font-size:10px; color:#0d9488; opacity:0.8;">Relative Humidity</span>
-        <span style="font-size:10px; color:#0d7377; font-family:'JetBrains Mono',monospace; font-weight:600;">76%</span>
+        <span id="ctrl-hum-pct" style="font-size:10px; color:#0d7377; font-family:'JetBrains Mono',monospace; font-weight:600;">76%</span>
        </div>
        <div style="height:6px; border-radius:99px; background:rgba(20,184,166,0.12); overflow:hidden;">
-        <div style="height:100%; width:76%; background:linear-gradient(90deg,#14b8a6,#06b6d4); border-radius:99px; transition:width 1s ease;"></div>
+        <div id="ctrl-hum-bar" style="height:100%; width:76%; background:linear-gradient(90deg,#14b8a6,#06b6d4); border-radius:99px; transition:width 1s ease;"></div>
        </div>
       </div>
       <!-- ESP32 badge -->
       <div style="margin-top:14px; display:flex; align-items:center; gap:7px; opacity:0.7;">
        <i data-lucide="wifi" style="width:12px;height:12px;color:#34d399;"></i>
-       <span style="font-size:10px; color:#0d7377; font-family:'JetBrains Mono',monospace; letter-spacing:0.08em;">ESP32 · NODE_001 · CONNECTED</span>
+       <span id="node-status" style="font-size:10px; color:#0d7377; font-family:'JetBrains Mono',monospace; letter-spacing:0.08em;">ESP32 · NODE_001 · DEMO</span>
       </div>
      </div>
 
@@ -364,7 +427,7 @@
        </div>
       </div>
       <!-- SVG chart -->
-      <svg class="chart-svg" width="100%" viewBox="0 0 520 160" preserveAspectRatio="xMidYMid meet" style="overflow:visible;">
+      <svg id="main-chart" class="chart-svg" width="100%" viewBox="0 0 520 160" preserveAspectRatio="xMidYMid meet" style="overflow:visible;">
        <defs>
         <linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1">
          <stop offset="0%" stop-color="#34d399" stop-opacity="0.18" />
@@ -402,21 +465,21 @@
        <text x="468" y="155" fill="#047857" font-size="9" text-anchor="middle" font-family="JetBrains Mono,monospace">17:00</text>
        <text x="520" y="155" fill="#047857" font-size="9" text-anchor="middle" font-family="JetBrains Mono,monospace">18:00</text>
        <!-- Zone 1 area -->
-       <path d="M0,88 L52,82 L104,78 L156,70 L208,66 L260,58 L312,60 L364,52 L416,46 L468,44 L520,40 L520,140 L0,140Z" fill="url(#lg1)" />
+       <path id="chart-a1" d="M0,88 L52,82 L104,78 L156,70 L208,66 L260,58 L312,60 L364,52 L416,46 L468,44 L520,40 L520,140 L0,140Z" fill="url(#lg1)" />
        <!-- Zone 2 area -->
-       <path d="M0,76 L52,68 L104,64 L156,56 L208,46 L260,40 L312,38 L364,30 L416,28 L468,22 L520,18 L520,140 L0,140Z" fill="url(#lg2)" />
+       <path id="chart-a2" d="M0,76 L52,68 L104,64 L156,56 L208,46 L260,40 L312,38 L364,30 L416,28 L468,22 L520,18 L520,140 L0,140Z" fill="url(#lg2)" />
        <!-- Zone 3 area -->
-       <path d="M0,102 L52,98 L104,100 L156,96 L208,100 L260,104 L312,100 L364,108 L416,106 L468,112 L520,116 L520,140 L0,140Z" fill="url(#lg3)" />
+       <path id="chart-a3" d="M0,102 L52,98 L104,100 L156,96 L208,100 L260,104 L312,100 L364,108 L416,106 L468,112 L520,116 L520,140 L0,140Z" fill="url(#lg3)" />
        <!-- Zone 1 line -->
-       <path class="line1" d="M0,88 L52,82 L104,78 L156,70 L208,66 L260,58 L312,60 L364,52 L416,46 L468,44 L520,40" stroke="#34d399" stroke-width="2.2" fill="none" />
+       <path id="chart-l1" class="line1" d="M0,88 L52,82 L104,78 L156,70 L208,66 L260,58 L312,60 L364,52 L416,46 L468,44 L520,40" stroke="#34d399" stroke-width="2.2" fill="none" />
        <!-- Zone 2 line -->
-       <path class="line2" d="M0,76 L52,68 L104,64 L156,56 L208,46 L260,40 L312,38 L364,30 L416,28 L468,22 L520,18" stroke="#14b8a6" stroke-width="2.2" fill="none" />
+       <path id="chart-l2" class="line2" d="M0,76 L52,68 L104,64 L156,56 L208,46 L260,40 L312,38 L364,30 L416,28 L468,22 L520,18" stroke="#14b8a6" stroke-width="2.2" fill="none" />
        <!-- Zone 3 line -->
-       <path class="line3" d="M0,102 L52,98 L104,100 L156,96 L208,100 L260,104 L312,100 L364,108 L416,106 L468,112 L520,116" stroke="#06b6d4" stroke-width="2.2" fill="none" />
+       <path id="chart-l3" class="line3" d="M0,102 L52,98 L104,100 L156,96 L208,100 L260,104 L312,100 L364,108 L416,106 L468,112 L520,116" stroke="#06b6d4" stroke-width="2.2" fill="none" />
        <!-- Dots -->
-       <circle cx="520" cy="40"  r="4" fill="#34d399" />
-       <circle cx="520" cy="18"  r="4" fill="#14b8a6" />
-       <circle cx="520" cy="116" r="4" fill="#06b6d4" />
+       <circle id="chart-d1" cx="520" cy="40"  r="4" fill="#34d399" />
+       <circle id="chart-d2" cx="520" cy="18"  r="4" fill="#14b8a6" />
+       <circle id="chart-d3" cx="520" cy="116" r="4" fill="#06b6d4" />
       </svg>
      </div>
 
@@ -433,10 +496,10 @@
        </defs>
        <!-- Track -->
        <circle cx="75" cy="75" r="58" fill="none" stroke="rgba(100,220,170,0.12)" stroke-width="12" stroke-dasharray="290 365" stroke-dashoffset="-37" stroke-linecap="round" transform="rotate(90 75 75)" />
-       <!-- Fill (76%) = 290*0.76 = 220.4 -->
-       <circle cx="75" cy="75" r="58" fill="none" stroke="url(#gaugeGrad)" stroke-width="12" stroke-dasharray="220 365" stroke-dashoffset="-37" stroke-linecap="round" transform="rotate(90 75 75)" style="filter:drop-shadow(0 0 6px #14b8a6)" />
+       <!-- Fill: updated by JS -->
+       <circle id="gauge-fill" cx="75" cy="75" r="58" fill="none" stroke="url(#gaugeGrad)" stroke-width="12" stroke-dasharray="220 365" stroke-dashoffset="-37" stroke-linecap="round" transform="rotate(90 75 75)" style="transition:stroke-dasharray 1s ease; filter:drop-shadow(0 0 6px #14b8a6)" />
        <!-- Center text -->
-       <text x="75" y="68"  text-anchor="middle" fill="#0f2f28" font-size="26" font-weight="700" font-family="JetBrains Mono,monospace">76</text>
+       <text id="gauge-val" x="75" y="68"  text-anchor="middle" fill="#0f2f28" font-size="26" font-weight="700" font-family="JetBrains Mono,monospace">76</text>
        <text x="75" y="86"  text-anchor="middle" fill="#0d9488" font-size="12" font-weight="500" font-family="Space Grotesk,sans-serif">%RH</text>
        <text x="75" y="106" text-anchor="middle" fill="#0d7377" font-size="9"  font-family="Space Grotesk,sans-serif">RELATIVE HUMIDITY</text>
       </svg>
@@ -448,10 +511,10 @@
       <div style="margin-top:16px; width:100%;">
        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
         <span style="font-size:11px; color:#047857;">Comfort Level</span>
-        <span style="font-size:11px; color:#fbbf24; font-family:'JetBrains Mono',monospace; font-weight:600;">HUMID</span>
+        <span id="comfort-label" style="font-size:11px; color:#fbbf24; font-family:'JetBrains Mono',monospace; font-weight:600;">HUMID</span>
        </div>
        <div style="height:5px; background:rgba(20,184,166,0.1); border-radius:99px; overflow:hidden;">
-        <div style="width:76%; height:100%; background:linear-gradient(90deg,#059669,#14b8a6,#0ea5e9); border-radius:99px;"></div>
+        <div id="comfort-bar" style="width:76%; height:100%; background:linear-gradient(90deg,#059669,#14b8a6,#0ea5e9); border-radius:99px;"></div>
        </div>
       </div>
      </div>
@@ -463,25 +526,25 @@
       <div style="display:flex; align-items:flex-end; justify-content:space-around; height:140px; gap:10px;">
        <!-- Z1 -->
        <div style="display:flex; flex-direction:column; align-items:center; gap:0; flex:1;">
-        <span style="font-size:12px; font-weight:700; color:#0f2f28; font-family:'JetBrains Mono',monospace; margin-bottom:10px; height:16px;">29.4°</span>
+        <span id="bar1-val" style="font-size:12px; font-weight:700; color:#0f2f28; font-family:'JetBrains Mono',monospace; margin-bottom:10px; height:16px;">29.4°</span>
         <div style="width:100%; position:relative; height:90px; display:flex; align-items:flex-end;">
-         <div class="bar-fill" style="width:100%; height:78%; background:linear-gradient(180deg,#34d399,rgba(52,211,153,0.3)); border-radius:6px 6px 3px 3px; animation-delay:0.5s; box-shadow:0 0 12px rgba(52,211,153,0.25);"></div>
+         <div id="bar1" class="bar-fill" style="width:100%; height:78%; background:linear-gradient(180deg,#34d399,rgba(52,211,153,0.3)); border-radius:6px 6px 3px 3px; animation-delay:0.5s; transition:height .8s ease; box-shadow:0 0 12px rgba(52,211,153,0.25);"></div>
         </div>
         <span style="font-size:10px; color:#0d7377; text-align:center; margin-top:12px;">Urban<br>Road</span>
        </div>
        <!-- Z2 -->
        <div style="display:flex; flex-direction:column; align-items:center; gap:0; flex:1;">
-        <span style="font-size:12px; font-weight:700; color:#0f2f28; font-family:'JetBrains Mono',monospace; margin-bottom:10px; height:16px;">31.8°</span>
+        <span id="bar2-val" style="font-size:12px; font-weight:700; color:#0f2f28; font-family:'JetBrains Mono',monospace; margin-bottom:10px; height:16px;">31.8°</span>
         <div style="width:100%; position:relative; height:90px; display:flex; align-items:flex-end;">
-         <div class="bar-fill" style="width:100%; height:96%; background:linear-gradient(180deg,#14b8a6,rgba(20,184,166,0.3)); border-radius:6px 6px 3px 3px; animation-delay:0.65s; box-shadow:0 0 12px rgba(20,184,166,0.25);"></div>
+         <div id="bar2" class="bar-fill" style="width:100%; height:96%; background:linear-gradient(180deg,#14b8a6,rgba(20,184,166,0.3)); border-radius:6px 6px 3px 3px; animation-delay:0.65s; transition:height .8s ease; box-shadow:0 0 12px rgba(20,184,166,0.25);"></div>
         </div>
         <span style="font-size:10px; color:#0d7377; text-align:center; margin-top:12px;">Alum.<br>Roofs</span>
        </div>
        <!-- Z3 -->
        <div style="display:flex; flex-direction:column; align-items:center; gap:0; flex:1;">
-        <span style="font-size:12px; font-weight:700; color:#0f2f28; font-family:'JetBrains Mono',monospace; margin-bottom:10px; height:16px;">26.1°</span>
+        <span id="bar3-val" style="font-size:12px; font-weight:700; color:#0f2f28; font-family:'JetBrains Mono',monospace; margin-bottom:10px; height:16px;">26.1°</span>
         <div style="width:100%; position:relative; height:90px; display:flex; align-items:flex-end;">
-         <div class="bar-fill" style="width:100%; height:60%; background:linear-gradient(180deg,#06b6d4,rgba(6,182,212,0.3)); border-radius:6px 6px 3px 3px; animation-delay:0.8s; box-shadow:0 0 12px rgba(6,182,212,0.25);"></div>
+         <div id="bar3" class="bar-fill" style="width:100%; height:60%; background:linear-gradient(180deg,#06b6d4,rgba(6,182,212,0.3)); border-radius:6px 6px 3px 3px; animation-delay:0.8s; transition:height .8s ease; box-shadow:0 0 12px rgba(6,182,212,0.25);"></div>
         </div>
         <span style="font-size:10px; color:#0d7377; text-align:center; margin-top:12px;">Tree<br>Cover</span>
        </div>
@@ -491,11 +554,11 @@
        <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:#0d7377; opacity:0.8; margin-bottom:2px;">Heat Indicators</div>
        <div style="display:flex; align-items:center; gap:6px;">
         <div style="width:10px; height:10px; border-radius:50%; background:#ef4444; box-shadow:0 0 6px #ef4444;"></div>
-        <span style="font-size:11px; color:#0f2f28;">Elevated — Alum. Roofs (+3.7°C)</span>
+        <span id="hi2" style="font-size:11px; color:#0f2f28;">Elevated — Alum. Roofs (+3.7°C)</span>
        </div>
        <div style="display:flex; align-items:center; gap:6px;">
         <div style="width:10px; height:10px; border-radius:50%; background:#f59e0b; box-shadow:0 0 6px #f59e0b;"></div>
-        <span style="font-size:11px; color:#0f2f28;">Warm — Urban Road (+1.3°C)</span>
+        <span id="hi1" style="font-size:11px; color:#0f2f28;">Warm — Urban Road (+1.3°C)</span>
        </div>
        <div style="display:flex; align-items:center; gap:6px;">
         <div style="width:10px; height:10px; border-radius:50%; background:#34d399; box-shadow:0 0 6px #34d399;"></div>
@@ -554,7 +617,7 @@
        </div>
        <div style="text-align:center;">
         <div id="map-z1" style="font-size:10px; font-weight:600; color:#e0f5ee;">Urban Road</div>
-        <div style="font-size:10px; color:#34d399; font-family:'JetBrains Mono',monospace;">29.4°C</div>
+        <div id="map-z1-temp" style="font-size:10px; color:#34d399; font-family:'JetBrains Mono',monospace;">29.4°C</div>
        </div>
       </div>
       <div style="position:absolute; left:54%; top:56%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:8px;">
@@ -563,7 +626,7 @@
        </div>
        <div style="text-align:center;">
         <div id="map-z2" style="font-size:10px; font-weight:600; color:#e0f5ee;">Alum. Roofs</div>
-        <div style="font-size:10px; color:#f87171; font-family:'JetBrains Mono',monospace;">31.8°C</div>
+        <div id="map-z2-temp" style="font-size:10px; color:#f87171; font-family:'JetBrains Mono',monospace;">31.8°C</div>
        </div>
       </div>
       <div style="position:absolute; left:78%; top:42%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:8px;">
@@ -572,7 +635,7 @@
        </div>
        <div style="text-align:center;">
         <div id="map-z3" style="font-size:10px; font-weight:600; color:#e0f5ee;">Tree Cover</div>
-        <div style="font-size:10px; color:#06b6d4; font-family:'JetBrains Mono',monospace;">26.1°C</div>
+        <div id="map-z3-temp" style="font-size:10px; color:#06b6d4; font-family:'JetBrains Mono',monospace;">26.1°C</div>
        </div>
       </div>
       <!-- Compass -->
@@ -631,7 +694,7 @@
   <script>
   lucide.createIcons();
 
-  // Live clock
+  // ─── Live clock ───────────────────────────────────────────────────────────
   function updateClock() {
     const now = new Date();
     const h = String(now.getHours()).padStart(2,'0');
@@ -643,13 +706,335 @@
   updateClock();
   setInterval(updateClock, 1000);
 
-  // Live data counter animation for stat3
-  let count = 1247;
-  setInterval(() => {
-    count += Math.floor(Math.random() * 4) + 1;
-    const el = document.getElementById('stat3-val');
-    if (el) el.textContent = count.toLocaleString();
-  }, 2200);
+  // ─── ESP32 live-data engine ───────────────────────────────────────────────
+  // History: up to 11 readings per zone (chart shows 11 points across 520px)
+  const HIST_MAX = 11;
+  const history = { z1: [], z2: [], z3: [] };
+
+  // Demo seed data (matches original static values)
+  const DEMO = {
+    z1: 29.4, z2: 31.8, z3: 26.1,
+    ctrl_temp: 28.7, ctrl_hum: 76
+  };
+
+  // Connection state
+  let esp32Ip = localStorage.getItem('esp32_ip') || '';
+  let pollMs  = parseInt(localStorage.getItem('esp32_poll') || '2000', 10);
+  let transport = localStorage.getItem('esp32_transport') || 'http';
+  let pollTimer = null;
+  let wsConn = null;
+  let liveMode = false;
+  let dataCount = 1247;
+  let prev = { z1: null, z2: null, z3: null };
+
+  // Restore saved settings into UI
+  (function restoreUI() {
+    const ipEl = document.getElementById('esp32-ip');
+    if (ipEl && esp32Ip) ipEl.value = esp32Ip;
+    const pollEl = document.getElementById('esp32-poll');
+    if (pollEl) pollEl.value = String(pollMs);
+    const tEl = document.getElementById('esp32-transport');
+    if (tEl) tEl.value = transport;
+  })();
+
+  // ── Chart geometry helpers ────────────────────────────────────────────────
+  const CHART_W = 520, CHART_H = 140, CHART_BASELINE = 140;
+  // Map temp (°C) → SVG y. Domain 24–36°C → y 130–10
+  function tempToY(t) {
+    const min = 24, max = 36;
+    const clamped = Math.max(min, Math.min(max, t));
+    return CHART_H - 10 - ((clamped - min) / (max - min)) * (CHART_H - 20);
+  }
+  function buildLinePath(pts) {
+    if (!pts.length) return '';
+    const step = pts.length < 2 ? 0 : CHART_W / (pts.length - 1);
+    return pts.map((v, i) => `${i === 0 ? 'M' : 'L'}${(i * step).toFixed(1)},${tempToY(v).toFixed(1)}`).join(' ');
+  }
+  function buildAreaPath(pts) {
+    const line = buildLinePath(pts);
+    if (!line) return '';
+    const n = pts.length;
+    const step = n < 2 ? 0 : CHART_W / (n - 1);
+    const lastX = ((n - 1) * step).toFixed(1);
+    return `${line} L${lastX},${CHART_BASELINE} L0,${CHART_BASELINE}Z`;
+  }
+  function buildSparkPath(hist, floor) {
+    // 9-point sparkline: map to 0–160, 0–40 (lower = hotter for spark)
+    if (!hist.length) return { line: '', fill: '' };
+    const w = 160, h = 40;
+    const n = hist.length;
+    const step = n < 2 ? 0 : w / (n - 1);
+    const min = Math.min(...hist), max = Math.max(...hist);
+    const range = max - min || 1;
+    const yOf = v => (1 - (v - min) / range) * (h - 8) + 4;
+    const pts = hist.map((v, i) => `${(i * step).toFixed(1)},${yOf(v).toFixed(1)}`);
+    const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p}`).join(' ');
+    const lastPt = pts[pts.length - 1].split(',');
+    const fill = `${line} L${lastPt[0]},${h} L0,${h}Z`;
+    return { line, fill };
+  }
+
+  // ── Badge / trend helpers ─────────────────────────────────────────────────
+  function badgeFor(temp, baseline) {
+    const diff = temp - baseline;
+    if (diff < -0.5) return { label: 'COOL',     bg: 'rgba(52,211,153,0.12)',   color: '#059669', border: 'rgba(52,211,153,0.25)' };
+    if (diff < 0.5)  return { label: 'NORMAL',   bg: 'rgba(52,211,153,0.08)',   color: '#0d9488', border: 'rgba(52,211,153,0.2)' };
+    if (diff < 2)    return { label: 'WARM',      bg: 'rgba(245,158,11,0.12)',   color: '#d97706', border: 'rgba(245,158,11,0.3)' };
+    if (diff < 4)    return { label: 'HIGH',      bg: 'rgba(239,68,68,0.12)',    color: '#dc2626', border: 'rgba(239,68,68,0.25)' };
+    return              { label: 'ELEVATED', bg: 'rgba(239,68,68,0.18)',    color: '#f87171', border: 'rgba(239,68,68,0.3)' };
+  }
+  function trendText(hist) {
+    if (hist.length < 2) return '— stable';
+    const rate = hist[hist.length - 1] - hist[hist.length - 2];
+    const arrow = rate > 0 ? '▲' : rate < 0 ? '▼' : '—';
+    return `${arrow} ${rate >= 0 ? '+' : ''}${rate.toFixed(1)}°C / rd`;
+  }
+
+  // ── Apply data to DOM ─────────────────────────────────────────────────────
+  function applyData(d) {
+    dataCount++;
+
+    const z3 = d.z3 ?? DEMO.z3;   // baseline = tree cover
+
+    // Helper: flash a value element
+    function setVal(id, text) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text;
+      el.classList.remove('val-flash');
+      void el.offsetWidth; // reflow
+      el.classList.add('val-flash');
+    }
+
+    // Zone cards
+    const zones = [
+      { z: d.z1 ?? DEMO.z1, tempId: 'z1-temp', badgeId: 'z1-badge', trendId: 'z1-trend', histKey: 'z1',
+        sparkLine: 'spark1-line', sparkFill: 'spark1-fill' },
+      { z: d.z2 ?? DEMO.z2, tempId: 'z2-temp', badgeId: 'z2-badge', trendId: 'z2-trend', histKey: 'z2',
+        sparkLine: 'spark2-line', sparkFill: 'spark2-fill' },
+      { z: z3,               tempId: 'z3-temp', badgeId: 'z3-badge', trendId: 'z3-trend', histKey: 'z3',
+        sparkLine: 'spark3-line', sparkFill: 'spark3-fill' },
+    ];
+
+    zones.forEach(({ z, tempId, badgeId, trendId, histKey, sparkLine, sparkFill }) => {
+      history[histKey].push(z);
+      if (history[histKey].length > HIST_MAX) history[histKey].shift();
+
+      setVal(tempId, z.toFixed(1));
+
+      const badge = badgeFor(z, z3);
+      const bdg = document.getElementById(badgeId);
+      if (bdg) {
+        bdg.textContent = badge.label;
+        bdg.style.background = badge.bg;
+        bdg.style.color = badge.color;
+        bdg.style.borderColor = badge.border;
+      }
+
+      const trendEl = document.getElementById(trendId);
+      if (trendEl) trendEl.textContent = trendText(history[histKey]);
+
+      // Sparkline
+      const sp = buildSparkPath(history[histKey]);
+      const lp = document.getElementById(sparkLine);
+      const fp = document.getElementById(sparkFill);
+      if (lp && sp.line) lp.setAttribute('d', sp.line);
+      if (fp && sp.fill) fp.setAttribute('d', sp.fill);
+    });
+
+    // DHT22 control
+    const ct = d.ctrl_temp ?? DEMO.ctrl_temp;
+    const ch = d.ctrl_hum  ?? DEMO.ctrl_hum;
+    setVal('ctrl-temp', ct.toFixed(1));
+    setVal('ctrl-hum', Math.round(ch));
+    const pctEl = document.getElementById('ctrl-hum-pct');
+    if (pctEl) pctEl.textContent = Math.round(ch) + '%';
+    const barEl = document.getElementById('ctrl-hum-bar');
+    if (barEl) barEl.style.width = Math.min(100, ch).toFixed(1) + '%';
+
+    // Gauge
+    const gFill = document.getElementById('gauge-fill');
+    const gVal  = document.getElementById('gauge-val');
+    const arc = 290 * (ch / 100);
+    if (gFill) gFill.setAttribute('stroke-dasharray', `${arc.toFixed(1)} 365`);
+    if (gVal) gVal.textContent = Math.round(ch);
+    // Comfort label
+    const comfortEl = document.getElementById('comfort-label');
+    const comfortBar = document.getElementById('comfort-bar');
+    if (comfortEl) {
+      if (ch < 40)      { comfortEl.textContent = 'DRY';      comfortEl.style.color = '#f59e0b'; }
+      else if (ch < 60) { comfortEl.textContent = 'COMFORT';  comfortEl.style.color = '#34d399'; }
+      else if (ch < 75) { comfortEl.textContent = 'HUMID';    comfortEl.style.color = '#fbbf24'; }
+      else              { comfortEl.textContent = 'VERY HUMID'; comfortEl.style.color = '#f87171'; }
+    }
+    if (comfortBar) comfortBar.style.width = Math.min(100, ch).toFixed(1) + '%';
+
+    // Bar chart
+    const z1t = d.z1 ?? DEMO.z1, z2t = d.z2 ?? DEMO.z2, z3t = z3;
+    const maxT = Math.max(z1t, z2t, z3t, 30);
+    const minT = Math.min(z1t, z2t, z3t, 24);
+    const barPct = v => Math.max(15, Math.round(((v - minT) / (maxT - minT || 1)) * 80 + 15));
+    const b1 = document.getElementById('bar1');
+    const b2 = document.getElementById('bar2');
+    const b3 = document.getElementById('bar3');
+    if (b1) b1.style.height = barPct(z1t) + '%';
+    if (b2) b2.style.height = barPct(z2t) + '%';
+    if (b3) b3.style.height = barPct(z3t) + '%';
+    const bv1 = document.getElementById('bar1-val');
+    const bv2 = document.getElementById('bar2-val');
+    const bv3 = document.getElementById('bar3-val');
+    if (bv1) bv1.textContent = z1t.toFixed(1) + '°';
+    if (bv2) bv2.textContent = z2t.toFixed(1) + '°';
+    if (bv3) bv3.textContent = z3t.toFixed(1) + '°';
+    // Heat indicator text
+    const hi2 = document.getElementById('hi2');
+    const hi1 = document.getElementById('hi1');
+    if (hi2) hi2.textContent = `Elevated — Alum. Roofs (+${(z2t - z3t).toFixed(1)}°C)`;
+    if (hi1) hi1.textContent = `Warm — Urban Road (+${(z1t - z3t).toFixed(1)}°C)`;
+
+    // Map zone temps
+    const mz1 = document.getElementById('map-z1-temp');
+    const mz2 = document.getElementById('map-z2-temp');
+    const mz3 = document.getElementById('map-z3-temp');
+    if (mz1) mz1.textContent = z1t.toFixed(1) + '°C';
+    if (mz2) mz2.textContent = z2t.toFixed(1) + '°C';
+    if (mz3) mz3.textContent = z3t.toFixed(1) + '°C';
+
+    // Main line chart
+    const h1 = history.z1, h2 = history.z2, h3 = history.z3;
+    const cl1 = document.getElementById('chart-l1');
+    const cl2 = document.getElementById('chart-l2');
+    const cl3 = document.getElementById('chart-l3');
+    const ca1 = document.getElementById('chart-a1');
+    const ca2 = document.getElementById('chart-a2');
+    const ca3 = document.getElementById('chart-a3');
+    if (h1.length >= 2) {
+      if (cl1) cl1.setAttribute('d', buildLinePath(h1));
+      if (ca1) ca1.setAttribute('d', buildAreaPath(h1));
+      const d1 = document.getElementById('chart-d1');
+      if (d1 && h1.length) d1.setAttribute('cy', tempToY(h1[h1.length-1]).toFixed(1));
+    }
+    if (h2.length >= 2) {
+      if (cl2) cl2.setAttribute('d', buildLinePath(h2));
+      if (ca2) ca2.setAttribute('d', buildAreaPath(h2));
+      const d2 = document.getElementById('chart-d2');
+      if (d2 && h2.length) d2.setAttribute('cy', tempToY(h2[h2.length-1]).toFixed(1));
+    }
+    if (h3.length >= 2) {
+      if (cl3) cl3.setAttribute('d', buildLinePath(h3));
+      if (ca3) ca3.setAttribute('d', buildAreaPath(h3));
+      const d3 = document.getElementById('chart-d3');
+      if (d3 && h3.length) d3.setAttribute('cy', tempToY(h3[h3.length-1]).toFixed(1));
+    }
+
+    // Footer stat3 counter
+    const s3 = document.getElementById('stat3-val');
+    if (s3) s3.textContent = dataCount.toLocaleString();
+
+    // Last-update timestamp
+    const lu = document.getElementById('last-update');
+    if (lu) {
+      const n = new Date();
+      lu.textContent = `Updated ${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}`;
+    }
+  }
+
+  // ── Demo mode: gentle random walk ────────────────────────────────────────
+  const demoState = { ...DEMO };
+  function demoTick() {
+    const jitter = () => (Math.random() - 0.5) * 0.4;
+    demoState.z1 = Math.max(22, Math.min(38, demoState.z1 + jitter()));
+    demoState.z2 = Math.max(22, Math.min(40, demoState.z2 + jitter()));
+    demoState.z3 = Math.max(20, Math.min(34, demoState.z3 + jitter()));
+    demoState.ctrl_temp = Math.max(18, Math.min(38, demoState.ctrl_temp + jitter()));
+    demoState.ctrl_hum  = Math.max(20, Math.min(99, demoState.ctrl_hum + (Math.random() - 0.5) * 1.5));
+    applyData({ ...demoState });
+  }
+
+  function setStatus(state, text) {
+    const dot  = document.getElementById('cs-dot');
+    const stxt = document.getElementById('cs-text');
+    const live = document.getElementById('live-label');
+    const node = document.getElementById('node-status');
+    if (dot)  { dot.className = `conn-status-dot conn-${state}`; }
+    if (stxt) stxt.textContent = text;
+    if (live) live.textContent = state === 'live' ? 'LIVE' : 'DEMO';
+    if (node) node.textContent = state === 'live'
+      ? `ESP32 · ${(document.getElementById('esp32-ip')||{value:'???'}).value} · CONNECTED`
+      : 'ESP32 · NODE_001 · DEMO';
+  }
+
+  function stopAll() {
+    clearInterval(pollTimer); pollTimer = null;
+    if (wsConn) { try { wsConn.close(); } catch(e){} wsConn = null; }
+    liveMode = false;
+  }
+
+  // ── HTTP polling ──────────────────────────────────────────────────────────
+  async function httpFetch(ip) {
+    const url = `http://${ip}/data`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
+  function startHttp(ip, ms) {
+    setStatus('connecting', 'CONNECTING…');
+    // Try first fetch immediately
+    httpFetch(ip).then(data => {
+      setStatus('live', 'LIVE — HTTP');
+      liveMode = true;
+      applyData(data);
+      pollTimer = setInterval(async () => {
+        try {
+          const d = await httpFetch(ip);
+          applyData(d);
+        } catch(e) {
+          setStatus('error', 'RECONNECTING…');
+        }
+      }, ms);
+    }).catch(err => {
+      setStatus('error', `ERROR: ${err.message}`);
+    });
+  }
+
+  // ── WebSocket ─────────────────────────────────────────────────────────────
+  function startWS(ip) {
+    setStatus('connecting', 'CONNECTING…');
+    const ws = new WebSocket(`ws://${ip}/ws`);
+    wsConn = ws;
+    ws.onopen  = () => { setStatus('live', 'LIVE — WS'); liveMode = true; };
+    ws.onmessage = e => {
+      try { applyData(JSON.parse(e.data)); } catch(ex) { console.warn('WS parse error', ex); }
+    };
+    ws.onerror = () => setStatus('error', 'WS ERROR');
+    ws.onclose = () => { if (liveMode) { setStatus('error', 'WS CLOSED'); liveMode = false; } };
+  }
+
+  // ── Public controls ───────────────────────────────────────────────────────
+  function esp32Connect() {
+    stopAll();
+    esp32Ip   = (document.getElementById('esp32-ip')||{value:''}).value.trim();
+    pollMs    = parseInt((document.getElementById('esp32-poll')||{value:'2000'}).value, 10);
+    transport = (document.getElementById('esp32-transport')||{value:'http'}).value;
+    localStorage.setItem('esp32_ip', esp32Ip);
+    localStorage.setItem('esp32_poll', pollMs);
+    localStorage.setItem('esp32_transport', transport);
+    if (!esp32Ip) { alert('Please enter the ESP32 IP address.'); return; }
+    if (transport === 'ws') startWS(esp32Ip);
+    else startHttp(esp32Ip, pollMs);
+  }
+
+  function esp32Demo() {
+    stopAll();
+    setStatus('demo', 'DEMO MODE');
+    pollMs = parseInt((document.getElementById('esp32-poll')||{value:'2000'}).value, 10);
+    demoTick();
+    pollTimer = setInterval(demoTick, pollMs);
+  }
+
+  // ── Boot: start demo ──────────────────────────────────────────────────────
+  esp32Demo();
 
   // Element SDK
   const defaultConfig = {
