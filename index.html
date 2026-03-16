@@ -1593,6 +1593,9 @@ void setup() {
   server.on("/data", HTTP_GET, [](AsyncWebServerRequest* req) {
     AsyncWebServerResponse* res =
       req->beginResponse(200, "application/json", buildJson());
+    // CORS: allow the dashboard to fetch data regardless of where it is hosted
+    // (GitHub Pages, local file, or any other origin). The ESP32 is a local device
+    // on a private network — wildcard origin is appropriate here.
     res->addHeader("Access-Control-Allow-Origin",  "*");
     res->addHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     res->addHeader("Cache-Control",                "no-cache");
@@ -1682,7 +1685,8 @@ void loop() {
 
   function copySketch() {
     const btn = document.getElementById('sketch-copy-btn');
-    navigator.clipboard.writeText(SKETCH).then(() => {
+
+    function onSuccess() {
       btn.innerHTML = '✓ Copied!';
       btn.style.background = 'linear-gradient(135deg,#16a34a,#059669)';
       setTimeout(() => {
@@ -1690,14 +1694,41 @@ void loop() {
         btn.style.background = '';
         typeof lucide !== "undefined" && lucide.createIcons();
       }, 2200);
-    }).catch(() => {
-      btn.textContent = 'Copy failed';
+    }
+
+    function onFallback() {
+      // Try the older execCommand approach (works on plain HTTP and file://)
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = SKETCH;
+        ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (ok) { onSuccess(); return; }
+      } catch (e) { /* fall through */ }
+
+      // Last resort: select the text in the <pre> so the user can press Ctrl+C
+      const pre = document.getElementById('sketch-pre');
+      const sel = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(pre);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      btn.innerHTML = '↑ Selected — press Ctrl+C';
       setTimeout(() => {
         btn.innerHTML = '<i data-lucide="copy" style="width:13px;height:13px;"></i>&nbsp;Copy';
-        btn.style.background = '';
         typeof lucide !== "undefined" && lucide.createIcons();
-      }, 2200);
-    });
+      }, 3500);
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(SKETCH).then(onSuccess).catch(onFallback);
+    } else {
+      onFallback();
+    }
   }
 
   </script>
