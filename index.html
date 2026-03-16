@@ -688,7 +688,7 @@
 
    <!-- ══ FOOTER ══ -->
    <footer style="text-align:center; padding:16px 32px 24px; opacity:0.35;">
-    <span style="font-size:10px; color:#6ee7b7; font-family:'JetBrains Mono',monospace; letter-spacing:0.12em;">ISOCLIME v1.0 · ESP32-SENSOR-NODE · MQTT PROTOCOL · © 2025</span>
+    <span style="font-size:10px; color:#6ee7b7; font-family:'JetBrains Mono',monospace; letter-spacing:0.12em;">ISOCLIME v1.0 · ESP32-SENSOR-NODE · HTTP / WEBSOCKET · © 2025</span>
    </footer>
 
   </div>
@@ -1013,9 +1013,12 @@
         }
       }, ms);
     }).catch(err => {
-      const friendly = err.name === 'TimeoutError' || /timeout/i.test(err.message)
-        ? `Connection timed out. Check that the ESP32 at ${ip} is online and serving GET /data.`
-        : `Could not reach ESP32 at ${ip}. Check the IP address and that the device is on the same network.`;
+      const isMixed = /mixed.content|blocked.*http|insecure/i.test(err.message);
+      const friendly = isMixed
+        ? `Mixed-content blocked: this page is HTTPS but the ESP32 is HTTP. Switch transport to WebSocket above, or open the dashboard from a local file (see README).`
+        : err.name === 'TimeoutError' || /timeout/i.test(err.message)
+          ? `Connection timed out. Check that the ESP32 at ${ip} is online and serving GET /data.`
+          : `Could not reach ESP32 at ${ip}. Check the IP address and that the device is on the same WiFi network.`;
       setStatus('error', 'CONN. FAILED', friendly);
     });
   }
