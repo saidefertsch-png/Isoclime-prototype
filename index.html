@@ -1871,15 +1871,27 @@ unsigned long lastRead = 0;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Build the JSON payload
+// Failed sensors emit JSON null (not 0) so the dashboard shows "--" rather
+// than a misleading 0.0 °C reading.
 // ─────────────────────────────────────────────────────────────────────────────
 String buildJson() {
-  // Replace NaN with 0.0 so the browser always receives a valid number
-  auto safe = [](float v) -> float { return isnan(v) ? 0.0f : v; };
-  char buf[128];
-  snprintf(buf, sizeof(buf),
-    "{\\"z1\\":%.1f,\\"z2\\":%.1f,\\"z3\\":%.1f,\\"ctrl_temp\\":%.1f,\\"ctrl_hum\\":%.0f}",
-    safe(z1), safe(z2), safe(z3), safe(ctrlTemp), safe(ctrlHum));
-  return String(buf);
+  // Helper: return a numeric string or "null" for a failed reading.
+  // tmp[16] is safe: floats here are at most "-127.0" (7 chars incl. null).
+  auto jf = [](float v, int dp) -> String {
+    if (isnan(v)) return "null";
+    char tmp[16];
+    if (dp == 0) snprintf(tmp, sizeof(tmp), "%.0f", v);
+    else         snprintf(tmp, sizeof(tmp), "%.1f", v);
+    return String(tmp);
+  };
+  String s = "{";
+  s += "\"z1\":"       + jf(z1,       1) + ",";
+  s += "\"z2\":"       + jf(z2,       1) + ",";
+  s += "\"z3\":"       + jf(z3,       1) + ",";
+  s += "\"ctrl_temp\":" + jf(ctrlTemp, 1) + ",";
+  s += "\"ctrl_hum\":"  + jf(ctrlHum,  0);
+  s += "}";
+  return s;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1889,8 +1901,17 @@ void readSensors() {
   // Control sensor (DHT22) ─────────────────────────────────────────────────
   float t = dht.readTemperature();
   float h = dht.readHumidity();
-  if (!isnan(t)) ctrlTemp = t;
-  if (!isnan(h)) ctrlHum  = h;
+  if (!isnan(t)) {
+    ctrlTemp = t;
+  } else {
+    Serial.println("[WARN] DHT22 temperature read failed — check wiring and");
+    Serial.println("       10 kΩ pull-up on DATA pin. Dashboard will show '--'.");
+  }
+  if (!isnan(h)) {
+    ctrlHum = h;
+  } else {
+    Serial.println("[WARN] DHT22 humidity read failed — same cause as above.");
+  }
 
 #if SINGLE_SENSOR_MODE
   // Use the DHT22 reading for all three zones with small synthetic offsets
@@ -1907,9 +1928,27 @@ void readSensors() {
   float r1 = ds18.getTempCByIndex(1);
   float r2 = ds18.getTempCByIndex(2);
   // DallasTemperature returns -127 on read error — treat as NaN
-  if (r0 > -100) z1 = r0;
-  if (r1 > -100) z2 = r1;
-  if (r2 > -100) z3 = r2;
+  if (r0 > -100) {
+    z1 = r0;
+  } else {
+    Serial.println("[WARN] Zone 1 DS18B20 read failed (-127 °C) — common causes:");
+    Serial.println("       • Missing 4.7 kΩ pull-up resistor (DATA → 3.3 V)");
+    Serial.println("       • Loose or broken wire on the one-wire bus");
+    Serial.println("       • Sensor not powered (check 3.3 V / GND)");
+    Serial.println("       Dashboard will show '--' for Zone 1.");
+  }
+  if (r1 > -100) {
+    z2 = r1;
+  } else {
+    Serial.println("[WARN] Zone 2 DS18B20 read failed (-127 °C) — see Zone 1 note above.");
+    Serial.println("       Dashboard will show '--' for Zone 2.");
+  }
+  if (r2 > -100) {
+    z3 = r2;
+  } else {
+    Serial.println("[WARN] Zone 3 DS18B20 read failed (-127 °C) — see Zone 1 note above.");
+    Serial.println("       Dashboard will show '--' for Zone 3.");
+  }
 #endif
 }
 

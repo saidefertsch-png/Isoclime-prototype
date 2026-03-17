@@ -14,7 +14,7 @@
  *   ESP32 pin 5  ──── DS18B20 × 3 data bus  (4.7 kΩ pull-up to 3.3 V)
  *   All sensors powered from 3.3 V / GND
  *
- *   ⚠️  SEEING 0.0 °C IN THE DASHBOARD?
+ *   ⚠️  SEEING -- IN THE DASHBOARD (or saw 0.0 °C with older firmware)?
  *       The sensor read failed — most common reasons:
  *         DS18B20 → missing 4.7 kΩ pull-up resistor between DATA and 3.3 V
  *         DHT22   → missing 10 kΩ pull-up resistor between DATA and 3.3 V,
@@ -506,7 +506,8 @@ unsigned long lastRead = 0;
 // than a misleading 0.0 °C reading.
 // ─────────────────────────────────────────────────────────────────────────────
 String buildJson() {
-  // Helper: return a numeric string (1 dp) or "null" for a failed reading
+  // Helper: return a numeric string or "null" for a failed reading.
+  // tmp[16] is safe: floats here are at most "-127.0" (7 chars incl. null).
   auto jf = [](float v, int dp) -> String {
     if (isnan(v)) return "null";
     char tmp[16];
