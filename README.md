@@ -158,7 +158,7 @@ Open **Sketch → Library Manager** (or **Sketch → Manage Libraries…**) and 
 | Library | Author | Notes |
 |---|---|---|
 | **ESP Async WebServer** | ESP32Async | ⚠️ Must be paired with **AsyncTCP by ESP32Async** (see below). Delete any older Me-No-Dev or Khoi Hoang versions of these two libraries first. |
-| **AsyncTCP** | ESP32Async | ⚠️ Required companion to ESP Async WebServer above. Without this, you get a `discards qualifiers` compile error. |
+| **AsyncTCP** | ESP32Async | ⚠️ Required companion to ESP Async WebServer above. Without this you get `AsyncTCP.h: No such file or directory`. If you get a `discards qualifiers` error instead, an old Me-No-Dev AsyncTCP is still installed — remove it first. |
 | **DHT sensor library** | Adafruit | |
 | **Adafruit Unified Sensor** | Adafruit | Required by the DHT library |
 | **OneWire** | Jim Studt / Paul Stoffregen | Skip if using SINGLE_SENSOR_MODE |
