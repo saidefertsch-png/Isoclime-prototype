@@ -14,6 +14,14 @@
  *   ESP32 pin 5  ──── DS18B20 × 3 data bus  (4.7 kΩ pull-up to 3.3 V)
  *   All sensors powered from 3.3 V / GND
  *
+ *   ⚠️  SEEING 0.0 °C IN THE DASHBOARD?
+ *       The sensor read failed — most common reasons:
+ *         DS18B20 → missing 4.7 kΩ pull-up resistor between DATA and 3.3 V
+ *         DHT22   → missing 10 kΩ pull-up resistor between DATA and 3.3 V,
+ *                   or sampling too fast (needs ≥2 s between reads)
+ *       Open Serial Monitor (115 200 baud) — failed sensors are logged with
+ *       the exact reason so you can pinpoint the problem quickly.
+ *
  *   DS18B20 physical order on the bus = Zone order (1 → 2 → 3).
  *   The first time you flash, open Serial Monitor (115 200 baud) and note
  *   the printed device addresses — that tells you which sensor is which zone.
@@ -390,50 +398,62 @@ function setTxt(id,v){
   el.textContent=v;el.className='';void el.offsetWidth;el.className='fl';
 }
 function applyData(d){
-  var z3t=typeof d.z3!=='undefined'?d.z3:26.1;
+  // null = sensor failed (check wiring / pull-up resistor — see Serial Monitor)
+  function ok(v){return v!==null&&v!==undefined;}
+  var z1t=ok(d.z1)?d.z1:null,z2t=ok(d.z2)?d.z2:null,z3t=ok(d.z3)?d.z3:null;
+  var base=z3t!==null?z3t:(z1t!==null?z1t:(z2t!==null?z2t:null));
   var zones=[
-    {t:typeof d.z1!=='undefined'?d.z1:29.4,ti:'z1t',bi:'z1b',ri:'z1r',hk:'z1',sl:'sl1',sf:'sf1'},
-    {t:typeof d.z2!=='undefined'?d.z2:31.8,ti:'z2t',bi:'z2b',ri:'z2r',hk:'z2',sl:'sl2',sf:'sf2'},
-    {t:z3t,                                 ti:'z3t',bi:'z3b',ri:'z3r',hk:'z3',sl:'sl3',sf:'sf3'}
+    {t:z1t,ti:'z1t',bi:'z1b',ri:'z1r',hk:'z1',sl:'sl1',sf:'sf1'},
+    {t:z2t,ti:'z2t',bi:'z2b',ri:'z2r',hk:'z2',sl:'sl2',sf:'sf2'},
+    {t:z3t,ti:'z3t',bi:'z3b',ri:'z3r',hk:'z3',sl:'sl3',sf:'sf3'}
   ];
   zones.forEach(function(z){
-    hist[z.hk].push(z.t);
-    if(hist[z.hk].length>HIST)hist[z.hk].shift();
-    setTxt(z.ti,z.t.toFixed(1));
-    var b=mkBadge(z.t,z3t);
-    var bel=document.getElementById(z.bi);
-    if(bel){bel.textContent=b.lbl;bel.style.background=b.bg;bel.style.color=b.col;bel.style.border='1px solid '+b.bdr;}
+    if(z.t!==null){
+      hist[z.hk].push(z.t);
+      if(hist[z.hk].length>HIST)hist[z.hk].shift();
+      setTxt(z.ti,z.t.toFixed(1));
+      var b=mkBadge(z.t,base!==null?base:z.t);
+      var bel=document.getElementById(z.bi);
+      if(bel){bel.textContent=b.lbl;bel.style.background=b.bg;bel.style.color=b.col;bel.style.border='1px solid '+b.bdr;}
+    } else {
+      setTxt(z.ti,'--');
+      var bel=document.getElementById(z.bi);
+      if(bel){bel.textContent='ERR';bel.style.background='rgba(239,68,68,.12)';bel.style.color='#dc2626';bel.style.border='1px solid rgba(239,68,68,.3)';}
+    }
     var rel=document.getElementById(z.ri);if(rel)rel.textContent=mkTrend(hist[z.hk]);
     var sp=mkSpark(hist[z.hk]);
     var sle=document.getElementById(z.sl),sfe=document.getElementById(z.sf);
     if(sle)sle.setAttribute('d',sp.l);if(sfe)sfe.setAttribute('d',sp.f);
   });
-  var ct=typeof d.ctrl_temp!=='undefined'?d.ctrl_temp:28.7;
-  var ch=typeof d.ctrl_hum!=='undefined'?d.ctrl_hum:76;
-  setTxt('ctt',ct.toFixed(1));setTxt('cth',String(Math.round(ch)));
-  var hpEl=document.getElementById('hp');if(hpEl)hpEl.textContent=Math.round(ch)+'%';
-  var hbEl=document.getElementById('hb');if(hbEl)hbEl.style.width=Math.min(100,ch).toFixed(1)+'%';
+  var ct=ok(d.ctrl_temp)?d.ctrl_temp:null,ch=ok(d.ctrl_hum)?d.ctrl_hum:null;
+  setTxt('ctt',ct!==null?ct.toFixed(1):'--');
+  setTxt('cth',ch!==null?String(Math.round(ch)):'--');
+  var hpEl=document.getElementById('hp');if(hpEl)hpEl.textContent=ch!==null?Math.round(ch)+'%':'--%';
+  var hbEl=document.getElementById('hb');if(hbEl)hbEl.style.width=ch!==null?Math.min(100,ch).toFixed(1)+'%':'0%';
   var gfEl=document.getElementById('gf'),gvEl=document.getElementById('gv');
-  if(gfEl)gfEl.setAttribute('stroke-dasharray',(290*(ch/100)).toFixed(1)+' 365');
-  if(gvEl)gvEl.textContent=String(Math.round(ch));
+  if(gfEl)gfEl.setAttribute('stroke-dasharray',ch!==null?(290*(ch/100)).toFixed(1)+' 365':'0 365');
+  if(gvEl)gvEl.textContent=ch!==null?String(Math.round(ch)):'--';
   var cmfEl=document.getElementById('cmf');
   if(cmfEl){
-    if(ch<40)cmfEl.textContent='DRY';
+    if(ch===null)cmfEl.textContent='--';
+    else if(ch<40)cmfEl.textContent='DRY';
     else if(ch<60)cmfEl.textContent='COMFORT';
     else if(ch<75)cmfEl.textContent='HUMID';
     else cmfEl.textContent='VERY HUMID';
   }
-  var z1t=typeof d.z1!=='undefined'?d.z1:29.4,z2t=typeof d.z2!=='undefined'?d.z2:31.8;
-  var mx=Math.max(z1t,z2t,z3t,30),mn=Math.min(z1t,z2t,z3t,24);
-  function bp(v){return Math.max(15,Math.round(((v-mn)/(mx-mn||1))*75+15));}
-  var b1=document.getElementById('b1'),b2=document.getElementById('b2'),b3=document.getElementById('b3');
-  if(b1)b1.style.height=bp(z1t)+'%';if(b2)b2.style.height=bp(z2t)+'%';if(b3)b3.style.height=bp(z3t)+'%';
-  setTxt('bv1',z1t.toFixed(1)+'°');setTxt('bv2',z2t.toFixed(1)+'°');setTxt('bv3',z3t.toFixed(1)+'°');
-  var hi1El=document.getElementById('hi1'),hi2El=document.getElementById('hi2');
-  if(hi2El)hi2El.textContent='Elevated — Alum. Roofs (+'+(z2t-z3t).toFixed(1)+'°C)';
-  if(hi1El)hi1El.textContent='Warm — Urban Road (+'+(z1t-z3t).toFixed(1)+'°C)';
+  var validZ=[z1t,z2t,z3t].filter(function(v){return v!==null;});
+  if(validZ.length){
+    var mx=Math.max.apply(null,validZ.concat([30])),mn=Math.min.apply(null,validZ.concat([24]));
+    function bp(v){return v!==null?Math.max(15,Math.round(((v-mn)/(mx-mn||1))*75+15)):15;}
+    var b1=document.getElementById('b1'),b2=document.getElementById('b2'),b3=document.getElementById('b3');
+    if(b1)b1.style.height=bp(z1t)+'%';if(b2)b2.style.height=bp(z2t)+'%';if(b3)b3.style.height=bp(z3t)+'%';
+    setTxt('bv1',z1t!==null?z1t.toFixed(1)+'°':'--');setTxt('bv2',z2t!==null?z2t.toFixed(1)+'°':'--');setTxt('bv3',z3t!==null?z3t.toFixed(1)+'°':'--');
+    var hi1El=document.getElementById('hi1'),hi2El=document.getElementById('hi2');
+    if(hi2El)hi2El.textContent=z2t!==null&&z3t!==null?'Elevated — Alum. Roofs (+'+(z2t-z3t).toFixed(1)+'°C)':'Alum. Roofs — no data';
+    if(hi1El)hi1El.textContent=z1t!==null&&z3t!==null?'Warm — Urban Road (+'+(z1t-z3t).toFixed(1)+'°C)':'Urban Road — no data';
+  }
   var mps=[['mz1',z1t],['mz2',z2t],['mz3',z3t]];
-  mps.forEach(function(p){var el=document.getElementById(p[0]);if(el)el.textContent=p[1].toFixed(1)+'°C';});
+  mps.forEach(function(p){var el=document.getElementById(p[0]);if(el)el.textContent=p[1]!==null?p[1].toFixed(1)+'°C':'--°C';});
   ['z1','z2','z3'].forEach(function(k,i){
     var h=hist[k];if(h.length<2)return;
     var n=i+1;
@@ -482,15 +502,26 @@ unsigned long lastRead = 0;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Build the JSON payload
+// Failed sensors emit JSON null (not 0) so the dashboard shows "--" rather
+// than a misleading 0.0 °C reading.
 // ─────────────────────────────────────────────────────────────────────────────
 String buildJson() {
-  // Replace NaN with 0.0 so the browser always receives a valid number
-  auto safe = [](float v) -> float { return isnan(v) ? 0.0f : v; };
-  char buf[128];
-  snprintf(buf, sizeof(buf),
-    "{\"z1\":%.1f,\"z2\":%.1f,\"z3\":%.1f,\"ctrl_temp\":%.1f,\"ctrl_hum\":%.0f}",
-    safe(z1), safe(z2), safe(z3), safe(ctrlTemp), safe(ctrlHum));
-  return String(buf);
+  // Helper: return a numeric string (1 dp) or "null" for a failed reading
+  auto jf = [](float v, int dp) -> String {
+    if (isnan(v)) return "null";
+    char tmp[16];
+    if (dp == 0) snprintf(tmp, sizeof(tmp), "%.0f", v);
+    else         snprintf(tmp, sizeof(tmp), "%.1f", v);
+    return String(tmp);
+  };
+  String s = "{";
+  s += "\"z1\":"       + jf(z1,       1) + ",";
+  s += "\"z2\":"       + jf(z2,       1) + ",";
+  s += "\"z3\":"       + jf(z3,       1) + ",";
+  s += "\"ctrl_temp\":" + jf(ctrlTemp, 1) + ",";
+  s += "\"ctrl_hum\":"  + jf(ctrlHum,  0);
+  s += "}";
+  return s;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -500,8 +531,17 @@ void readSensors() {
   // Control sensor (DHT22) ─────────────────────────────────────────────────
   float t = dht.readTemperature();
   float h = dht.readHumidity();
-  if (!isnan(t)) ctrlTemp = t;
-  if (!isnan(h)) ctrlHum  = h;
+  if (!isnan(t)) {
+    ctrlTemp = t;
+  } else {
+    Serial.println("[WARN] DHT22 temperature read failed — check wiring and");
+    Serial.println("       10 kΩ pull-up on DATA pin. Dashboard will show '--'.");
+  }
+  if (!isnan(h)) {
+    ctrlHum = h;
+  } else {
+    Serial.println("[WARN] DHT22 humidity read failed — same cause as above.");
+  }
 
 #if SINGLE_SENSOR_MODE
   // Use the DHT22 reading for all three zones with small synthetic offsets
@@ -518,9 +558,27 @@ void readSensors() {
   float r1 = ds18.getTempCByIndex(1);
   float r2 = ds18.getTempCByIndex(2);
   // DallasTemperature returns -127 on read error — treat as NaN
-  if (r0 > -100) z1 = r0;
-  if (r1 > -100) z2 = r1;
-  if (r2 > -100) z3 = r2;
+  if (r0 > -100) {
+    z1 = r0;
+  } else {
+    Serial.println("[WARN] Zone 1 DS18B20 read failed (-127 °C) — common causes:");
+    Serial.println("       • Missing 4.7 kΩ pull-up resistor (DATA → 3.3 V)");
+    Serial.println("       • Loose or broken wire on the one-wire bus");
+    Serial.println("       • Sensor not powered (check 3.3 V / GND)");
+    Serial.println("       Dashboard will show '--' for Zone 1.");
+  }
+  if (r1 > -100) {
+    z2 = r1;
+  } else {
+    Serial.println("[WARN] Zone 2 DS18B20 read failed (-127 °C) — see Zone 1 note above.");
+    Serial.println("       Dashboard will show '--' for Zone 2.");
+  }
+  if (r2 > -100) {
+    z3 = r2;
+  } else {
+    Serial.println("[WARN] Zone 3 DS18B20 read failed (-127 °C) — see Zone 1 note above.");
+    Serial.println("       Dashboard will show '--' for Zone 3.");
+  }
 #endif
 }
 
