@@ -43,20 +43,33 @@
 // 1 = single DHT22 only (synthetic zone offsets, no DS18B20)
 #define SINGLE_SENSOR_MODE  0
 
-// WiFi credentials — two options:
+// ── WiFi credentials ──────────────────────────────────────────────────────────
 //
-//  Option 1 (recommended): create a file called  secrets.h  in this folder
-//  with the two lines below and it will be included automatically.
-//  secrets.h is listed in .gitignore so it will NOT be committed to GitHub.
+//  SCHOOL_WIFI  0 = use HOME WiFi credentials (default — use at home)
+//  SCHOOL_WIFI  1 = use SCHOOL WiFi credentials
 //
-//  Option 2 (quick start): replace the placeholder strings below directly.
-//  Do NOT commit real credentials to a public repository.
+//  ★ HOW TO SWITCH WHEN YOU GET TO SCHOOL:
+//    Step 1 — Change  #define SCHOOL_WIFI  0  →  #define SCHOOL_WIFI  1  (below)
+//    Step 2 — Fill in your school's WiFi name + password in the SCHOOL section.
+//    Step 3 — Plug the ESP32 into a computer and click Upload in Arduino IDE.
+//    Step 4 — Open Serial Monitor (115200 baud) to see the new IP address.
 //
+#define SCHOOL_WIFI  0
+
 #if __has_include("secrets.h")
+  // Advanced: keep credentials in secrets.h (never committed to GitHub).
+  // Format — two lines in that file:
+  //   const char* WIFI_SSID = "...";
+  //   const char* WIFI_PASS = "...";
   #include "secrets.h"
+#elif SCHOOL_WIFI == 0
+  // ── Home WiFi ──────────────────────────────────────────────────────────────
+  const char* WIFI_SSID = "YOUR_HOME_WIFI_SSID";     // ← your home network name
+  const char* WIFI_PASS = "YOUR_HOME_WIFI_PASSWORD";  // ← your home password
 #else
-  const char* WIFI_SSID = "YOUR_WIFI_SSID";    // ← replace with your network name
-  const char* WIFI_PASS = "YOUR_WIFI_PASSWORD"; // ← replace with your password
+  // ── School WiFi ────────────────────────────────────────────────────────────
+  const char* WIFI_SSID = "YOUR_SCHOOL_WIFI_SSID";    // ← school network name
+  const char* WIFI_PASS = "YOUR_SCHOOL_WIFI_PASSWORD"; // ← school password (use "" if open/no password)
 #endif
 
 // Pin assignments
@@ -79,6 +92,51 @@ const unsigned long READ_INTERVAL_MS = 2000;
   #include <OneWire.h>
   #include <DallasTemperature.h>
 #endif
+
+// ── Mini dashboard HTML ───────────────────────────────────────────────────────
+// Served at http://<ip>/ — open this URL in Safari on your iPad (or any browser)
+// while on the same WiFi as the ESP32. Shows live sensor data without any
+// mixed-content restrictions (everything is plain HTTP on the local network).
+static const char DASHBOARD_HTML[] PROGMEM = R"html(<!doctype html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IsoClime Live</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:linear-gradient(135deg,#ecfdf5,#f0fdfa);min-height:100vh;padding:20px;color:#0f2f28}
+h1{text-align:center;font-size:22px;font-weight:700;color:#059669;padding:20px 0 6px}
+.sub{text-align:center;font-size:13px;color:#0d9488;margin-bottom:24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;max-width:580px;margin:0 auto}
+.card{background:rgba(255,255,255,.8);border:1px solid rgba(52,211,153,.35);border-radius:16px;padding:18px 14px;text-align:center}
+.lbl{font-size:10px;color:#0d9488;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.val{font-size:32px;font-weight:700;color:#059669}.unit{font-size:13px;color:#0d7377;margin-top:3px}
+.st{text-align:center;margin-top:22px;font-size:12px;color:#0d9488}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;margin-right:5px;animation:p 1.5s infinite}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
+</style></head><body>
+<h1>&#127807; IsoClime</h1>
+<p class="sub">Live microclimate sensor data &mdash; updates every 2 s</p>
+<div class="grid">
+<div class="card"><div class="lbl">Zone 1</div><div class="val" id="z1">&mdash;</div><div class="unit">&deg;C</div></div>
+<div class="card"><div class="lbl">Zone 2</div><div class="val" id="z2">&mdash;</div><div class="unit">&deg;C</div></div>
+<div class="card"><div class="lbl">Zone 3</div><div class="val" id="z3">&mdash;</div><div class="unit">&deg;C</div></div>
+<div class="card"><div class="lbl">Control Temp</div><div class="val" id="ct">&mdash;</div><div class="unit">&deg;C</div></div>
+<div class="card"><div class="lbl">Humidity</div><div class="val" id="ch">&mdash;</div><div class="unit">%</div></div>
+</div>
+<p class="st" id="st"><span class="dot"></span>Connecting&hellip;</p>
+<script>
+function upd(){
+  fetch('/data').then(function(r){return r.json();}).then(function(d){
+    document.getElementById('z1').textContent=d.z1.toFixed(1);
+    document.getElementById('z2').textContent=d.z2.toFixed(1);
+    document.getElementById('z3').textContent=d.z3.toFixed(1);
+    document.getElementById('ct').textContent=d.ctrl_temp.toFixed(1);
+    document.getElementById('ch').textContent=Math.round(d.ctrl_hum);
+    document.getElementById('st').innerHTML='<span class="dot"></span>Live &mdash; '+new Date().toLocaleTimeString();
+  }).catch(function(){
+    document.getElementById('st').innerHTML='<span style="color:#dc2626">&#9888; Connection lost &mdash; retrying&hellip;</span>';
+  });
+}
+upd();setInterval(upd,2000);
+</script></body></html>)html";
 
 // ── Sensor objects ────────────────────────────────────────────────────────────
 DHT dht(DHT_PIN, DHT_TYPE);
@@ -227,25 +285,9 @@ void setup() {
     req->send(res);
   });
 
-  // GET / — simple info page you can open in any browser to confirm the node is up
+  // GET / — mini dashboard: open http://<ip>/ in Safari on your iPad (same WiFi)
   server.on("/", HTTP_GET, [](AsyncWebServerRequest* req) {
-    String ip = WiFi.localIP().toString();
-    String html =
-      "<!doctype html><html><head>"
-      "<meta name='viewport' content='width=device-width,initial-scale=1'>"
-      "<title>IsoClime Node</title>"
-      "<style>body{font-family:sans-serif;max-width:480px;margin:40px auto;padding:0 16px;}"
-      "pre{background:#f0fdf4;border:1px solid #a7f3d0;border-radius:8px;padding:12px;}"
-      "a{color:#059669;}</style></head><body>"
-      "<h2>&#127807; IsoClime ESP32 Node</h2>"
-      "<p>Node is <strong>online</strong>.</p>"
-      "<p><a href='/data'>GET /data</a> &mdash; live JSON reading</p>"
-      "<p>WebSocket: <code>ws://" + ip + "/ws</code></p>"
-      "<pre id='d'>Loading…</pre>"
-      "<script>fetch('/data').then(r=>r.json()).then(d=>{"
-      "document.getElementById('d').textContent=JSON.stringify(d,null,2)});</script>"
-      "</body></html>";
-    req->send(200, "text/html", html);
+    req->send_P(200, "text/html", DASHBOARD_HTML);
   });
 
   // ── WebSocket ──────────────────────────────────────────────────────────────
