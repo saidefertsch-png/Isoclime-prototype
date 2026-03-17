@@ -57,10 +57,11 @@
 #define SCHOOL_WIFI  0
 
 #if __has_include("secrets.h")
-  // Advanced: keep credentials in secrets.h (never committed to GitHub).
-  // Format — two lines in that file:
-  //   const char* WIFI_SSID = "...";
-  //   const char* WIFI_PASS = "...";
+  // ★ RECOMMENDED: put your real credentials in secrets.h (same folder as this
+  //   file).  secrets.h is in .gitignore so it is never pushed to GitHub.
+  //   Copy arduino/isoclime_esp32/secrets.h.example → secrets.h and fill it in.
+  //   secrets.h uses the same SCHOOL_WIFI toggle above, so you only need to
+  //   change SCHOOL_WIFI 0 → 1 when you get to school — no other edits needed.
   #include "secrets.h"
 #elif SCHOOL_WIFI == 0
   // ── Home WiFi ──────────────────────────────────────────────────────────────
