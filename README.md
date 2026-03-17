@@ -200,6 +200,8 @@ If you only have one DHT22 for now, also change:
 2. **Tools → Port** → select the COM / `/dev/tty…` port that appeared.
 3. Click **Upload** (the → arrow button).
 4. Once uploaded, open **Tools → Serial Monitor** at **115 200 baud**.
+   > 💡 **Only seeing `?` characters?** Your Serial Monitor is set to the wrong baud rate.
+   > Change the dropdown in the **bottom-right corner** of the Serial Monitor window to **115200 baud**, then press the ESP32's **reset button** (or unplug/replug USB) to see the output from the beginning.
 5. You will see the IP address printed:
    - **At home:** dynamic address, e.g. `[WiFi] Connected!  IP address: 192.168.1.42`
    - **At school:** always `[WiFi] Connected!  IP address: 11.0.8.106`
@@ -248,3 +250,35 @@ If you want the ESP32 to host the page (no internet needed):
 3. Tap **Add to Home Screen**.
 4. Give it a name (e.g. "IsoClime") and tap **Add**.
 5. It now behaves like a native app — full-screen, no browser bar.
+---
+
+## 🛠️ Troubleshooting
+
+### Serial Monitor shows only `?` or garbled characters
+
+**Cause:** The Serial Monitor baud rate doesn't match the sketch (`Serial.begin(115200)`).
+
+**Fix:**
+1. In Arduino IDE, open **Tools → Serial Monitor**.
+2. Find the **baud-rate dropdown** in the **bottom-right corner** of the Serial Monitor window.
+3. Change it to **115200**.
+4. Press the **reset button** on the ESP32 (or unplug and replug the USB cable) so you see the full startup log from the beginning.
+
+You should then see output like:
+```
+=== IsoClime ESP32 Sensor Node ===
+[WiFi] Connecting......
+[WiFi] Connected!  IP address: 192.168.1.42
+```
+
+### `ESPAsyncWebServer.h: No such file or directory`
+
+See **Step 1 — Install libraries** above. The ESP Async WebServer library (by ESP32Async) is not installed.
+
+### `AsyncTCP.h: No such file or directory`
+
+Install **AsyncTCP** by **ESP32Async** from Library Manager (same author as ESP Async WebServer).
+
+### Compiler error: `discards qualifiers [-fpermissive]`
+
+An old **Me-No-Dev** version of AsyncTCP is still installed alongside the ESP32Async version. Go to your Arduino `libraries` folder, delete the old `AsyncTCP` folder, then reinstall **AsyncTCP by ESP32Async** from Library Manager.
