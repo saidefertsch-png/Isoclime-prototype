@@ -225,6 +225,7 @@ void onWsEvent(AsyncWebSocket* srv, AsyncWebSocketClient* client,
 // ─────────────────────────────────────────────────────────────────────────────
 void setup() {
   Serial.begin(115200);  // ← Serial Monitor baud rate must also be 115200 (Tools → Serial Monitor → bottom-right dropdown)
+  delay(500);            // give the USB-serial link time to open so the first lines aren't lost
   Serial.println("\n=== IsoClime ESP32 Sensor Node ===");
 
   // Start sensors ────────────────────────────────────────────────────────────

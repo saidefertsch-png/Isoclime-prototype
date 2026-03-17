@@ -254,6 +254,35 @@ If you want the ESP32 to host the page (no internet needed):
 
 ## 🛠️ Troubleshooting
 
+### Serial Monitor shows `?` characters at the very start (a line or two)
+
+**This is normal.** Every ESP32 prints a short ROM bootloader message at **74880 baud** before the sketch starts. At 115200 baud that appears as one or two `?` lines. Ignore them — readable text from the sketch follows immediately after.
+
+If you see `?` followed by a blank screen and the sketch text never appears, see the section below.
+
+### Serial Monitor is set to 115200 but still shows only `?` — no readable text
+
+The sketch startup text is being lost before it can appear. The most common causes:
+
+**1. Open the Serial Monitor *before* pressing reset.**
+The ESP32 boots fast — if the Serial Monitor window isn't already open when the ESP32 starts, you miss the startup messages. With the sketch uploaded:
+1. Keep the Serial Monitor open.
+2. Press the small **reset (EN) button** on the ESP32 board.
+3. The full startup log should now appear.
+
+**2. USB cable is charge-only (no data lines).**
+Try a different cable. A charge-only cable powers the ESP32 but passes no serial data.
+
+**3. Sketch crashing in a boot loop.**
+If the ESP32 keeps crashing and restarting, you'll see a repeating stream of `?` (the ROM bootloader, ~74880 baud) with no sketch text in between. Check the Serial Monitor carefully — you may see a brief panic or "Guru Meditation Error" message just before each reset. Common causes: incorrect pin wiring causing a short, or a missing driver for the USB chip on the board.
+
+### Serial Monitor shows `[WiFi] Connecting.......` with no IP printed
+
+The WiFi credentials are wrong or the network is unreachable.
+1. Open `arduino/isoclime_esp32/secrets.h` and double-check the SSID and password spelling (case-sensitive).
+2. Make sure `#define SCHOOL_WIFI` in the sketch matches the credentials block you filled in (`0` = home, `1` = school).
+3. Re-upload after correcting, then reopen the Serial Monitor.
+
 ### Serial Monitor shows only `?` or garbled characters
 
 **Cause:** The Serial Monitor baud rate doesn't match the sketch (`Serial.begin(115200)`).
