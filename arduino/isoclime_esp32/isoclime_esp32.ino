@@ -25,8 +25,11 @@
  *
  * ── Required libraries (Sketch → Manage Libraries) ───────────────────────
  *   • ESP Async WebServer  by ESP32Async   (ALSO install AsyncTCP by ESP32Async — same author, required companion)
- *     ⚠️  If you get a "discards qualifiers" error, you have an old AsyncTCP
- *         (Me-No-Dev) still installed. Delete it and install AsyncTCP by ESP32Async.
+ *     ⚠️  If you get "ESPAsyncWebServer.h: No such file or directory", this
+ *         library is not installed — open Sketch → Manage Libraries, search
+ *         "ESP Async WebServer", and install the one by ESP32Async.
+ *     ⚠️  If you get "discards qualifiers", an old AsyncTCP (Me-No-Dev) is still
+ *         installed. Delete it and install AsyncTCP by ESP32Async instead.
  *   • DHT sensor library   by Adafruit
  *   • Adafruit Unified Sensor  by Adafruit  (DHT dependency)
  *   • OneWire              by Jim Studt / Paul Stoffregen
