@@ -157,7 +157,8 @@ Open **Sketch → Library Manager** (or **Sketch → Manage Libraries…**) and 
 
 | Library | Author | Notes |
 |---|---|---|
-| **ESP32Async WebServer** | Khoi Hoang (khoih-prog) | ⚠️ Use this fork — the old Me-No-Dev version breaks with ESP32 core ≥ 3.x. Also install **AsyncTCP_SSL** by Khoi Hoang. |
+| **ESP Async WebServer** | ESP32Async | ⚠️ Must be paired with **AsyncTCP by ESP32Async** (see below). Delete any older Me-No-Dev or Khoi Hoang versions of these two libraries first. |
+| **AsyncTCP** | ESP32Async | ⚠️ Required companion to ESP Async WebServer above. Without this, you get a `discards qualifiers` compile error. |
 | **DHT sensor library** | Adafruit | |
 | **Adafruit Unified Sensor** | Adafruit | Required by the DHT library |
 | **OneWire** | Jim Studt / Paul Stoffregen | Skip if using SINGLE_SENSOR_MODE |

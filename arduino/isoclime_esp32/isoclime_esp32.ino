@@ -24,7 +24,9 @@
  *   dashboard still shows distinct values while you source more sensors.
  *
  * ── Required libraries (Sketch → Manage Libraries) ───────────────────────
- *   • ESP32Async WebServer  by Khoi Hoang (khoih-prog)   (also install AsyncTCP_SSL by Khoi Hoang)
+ *   • ESP Async WebServer  by ESP32Async   (ALSO install AsyncTCP by ESP32Async — same author, required companion)
+ *     ⚠️  If you get a "discards qualifiers" error, you have an old AsyncTCP
+ *         (Me-No-Dev) still installed. Delete it and install AsyncTCP by ESP32Async.
  *   • DHT sensor library   by Adafruit
  *   • Adafruit Unified Sensor  by Adafruit  (DHT dependency)
  *   • OneWire              by Jim Studt / Paul Stoffregen
