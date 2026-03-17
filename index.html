@@ -882,7 +882,7 @@ ESP32 GND ────────── DS18B20 × 3 (GND) ──────�
          <ol style="margin-left:18px; line-height:1.9; margin-top:6px;">
           <li>Make sure your iPad is on the <strong>same WiFi as the ESP32</strong>.</li>
           <li>Open <strong>Safari</strong> and go to <span class="sg-tag">http://192.168.1.42/</span> (use the IP you noted — change the numbers to match yours).</li>
-          <li>You will see a live card-based dashboard served directly by the ESP32 — no mixed-content issues, works perfectly on iPad. 🎉</li>
+          <li>You will see the full IsoClime dashboard served directly by the ESP32 — IsoClime logo, live zone cards with sparklines, rolling temperature line chart, humidity gauge, comparison bar chart, and zone map. No mixed-content issues, works perfectly on iPad. 🎉</li>
          </ol>
          <div style="height:10px;"></div>
          <strong>Option B — Full IsoClime dashboard (this page):</strong>
@@ -891,7 +891,7 @@ ESP32 GND ────────── DS18B20 × 3 (GND) ──────�
           <li>In the <strong>ESP32 Connection</strong> bar at the top of this page, type the IP address (e.g. <span class="sg-tag">192.168.1.42</span>).</li>
           <li>Click <strong>Connect</strong>. The status badge turns green — <strong>LIVE</strong>. All values update every 2 s.</li>
          </ol>
-         <div class="sg-warn">💡 <strong>Opening from GitHub Pages on iPad?</strong> If Safari shows a "blocked: mixed-content" error (HTTPS page trying to reach HTTP device), use <strong>Option A</strong> above — open the ESP32's built-in dashboard at <span class="sg-tag">http://&lt;ip&gt;/</span> directly. That page is served by the ESP32 itself and has no HTTPS restrictions.</div>
+         <div class="sg-warn">💡 <strong>Opening from GitHub Pages on iPad?</strong> If Safari shows a "blocked: mixed-content" error (HTTPS page trying to reach HTTP device), use <strong>Option A</strong> above — open the ESP32's built-in dashboard at <span class="sg-tag">http://&lt;ip&gt;/</span> directly. That page is served by the ESP32 itself (full rich UI, no HTTPS restrictions) and works on any iPad on the same WiFi.</div>
         </div>
        </div>
       </div>
@@ -1491,46 +1491,362 @@ const unsigned long READ_INTERVAL_MS = 2000;
   #include <DallasTemperature.h>
 #endif
 
-// ── Mini dashboard HTML ───────────────────────────────────────────────────────
+// ── Full IsoClime dashboard HTML ──────────────────────────────────────────────
 // Served at http://<ip>/ — open this URL in Safari on your iPad (or any browser)
-// while on the same WiFi as the ESP32. Shows live sensor data without any
-// mixed-content restrictions (everything is plain HTTP on the local network).
+// while on the same WiFi as the ESP32.  Everything is self-contained (no CDN),
+// so it works perfectly on a school/home network with or without internet access.
+//
+// Features: IsoClime logo · live clock · zone cards with sparklines · rolling
+// multi-zone line chart · humidity gauge · comparison bar chart · zone map.
+// All values update automatically every 2 s from GET /data on this device.
 static const char DASHBOARD_HTML[] PROGMEM = R"html(<!doctype html><html><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IsoClime Live</title><style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:linear-gradient(135deg,#ecfdf5,#f0fdfa);min-height:100vh;padding:20px;color:#0f2f28}
-h1{text-align:center;font-size:22px;font-weight:700;color:#059669;padding:20px 0 6px}
-.sub{text-align:center;font-size:13px;color:#0d9488;margin-bottom:24px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;max-width:580px;margin:0 auto}
-.card{background:rgba(255,255,255,.8);border:1px solid rgba(52,211,153,.35);border-radius:16px;padding:18px 14px;text-align:center}
-.lbl{font-size:10px;color:#0d9488;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
-.val{font-size:32px;font-weight:700;color:#059669}.unit{font-size:13px;color:#0d7377;margin-top:3px}
-.st{text-align:center;margin-top:22px;font-size:12px;color:#0d9488}
-.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;margin-right:5px;animation:p 1.5s infinite}
-@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f0fdfb;color:#0f2f28;min-height:100vh}
+.wrap{max-width:1200px;margin:0 auto;padding:0 14px 28px}
+.card{background:rgba(255,255,255,.85);border:1px solid rgba(52,211,153,.2);border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+header{background:rgba(255,255,255,.95);border-bottom:1px solid rgba(52,211,153,.18);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:10;margin-bottom:14px}
+.logo{display:flex;align-items:center;gap:11px}
+.logo-icon{width:38px;height:38px;background:linear-gradient(135deg,#064e3b,#065f46);border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 14px rgba(52,211,153,.25)}
+.logo-name{font-size:19px;font-weight:700;background:linear-gradient(135deg,#059669,#0d9488,#0891b2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo-sub{font-size:10px;color:#047857;margin-top:1px}
+.lbadge{display:flex;align-items:center;gap:6px;background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);border-radius:99px;padding:5px 12px}
+.dot{width:7px;height:7px;border-radius:50%;background:#16a34a;box-shadow:0 0 6px #16a34a;animation:pp 1.8s ease-in-out infinite}
+@keyframes pp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(1.4)}}
+.btxt{font-size:11px;font-weight:700;color:#047857;font-family:monospace;letter-spacing:.06em}
+.clk{font-size:11px;color:#0d7377;font-family:monospace}
+.zrow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+@media(max-width:680px){.zrow{grid-template-columns:repeat(2,1fr)}}
+.zc{padding:15px}
+.zlbl{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#0d7377;font-weight:600;opacity:.8}
+.zname{font-size:12px;font-weight:600;color:#047857;margin-top:2px;margin-bottom:8px}
+.ztmp{font-size:36px;font-weight:700;color:#0f2f28;line-height:1;font-family:monospace}
+.zdeg{font-size:15px;color:#34d399}
+.hbadge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;font-family:monospace;margin:6px 0 2px}
+.ztrend{font-size:10px;color:#0d7377;font-family:monospace;opacity:.8}
+.crow{display:flex;justify-content:space-between;align-items:center;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.12);border-radius:9px;padding:7px 11px;margin-bottom:7px}
+.clabel{font-size:11px;color:#0d9488}
+.cval{font-size:17px;font-weight:700;font-family:monospace}
+.hbw{height:5px;border-radius:99px;background:rgba(20,184,166,.1);overflow:hidden}
+.hbar{height:100%;border-radius:99px;background:linear-gradient(90deg,#14b8a6,#06b6d4);transition:width 1s ease}
+.crow2{display:grid;grid-template-columns:1fr 186px 186px;gap:12px;margin-bottom:12px}
+@media(max-width:680px){.crow2{grid-template-columns:1fr}}
+.cc{padding:16px}
+.cht{font-size:13px;font-weight:700;color:#0f2f28;margin-bottom:2px}
+.chs{font-size:10px;color:#0d7377;opacity:.7;margin-bottom:8px}
+.leg{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.li{display:flex;align-items:center;gap:4px;font-size:10px;color:#0d7377}
+.ld{width:14px;height:3px;border-radius:2px}
+.mapc{padding:16px;margin-bottom:12px}
+.mapinner{position:relative;background:rgba(6,20,14,.55);border:1px solid rgba(52,211,153,.1);border-radius:10px;overflow:hidden;height:156px}
+.znode{position:absolute;display:flex;flex-direction:column;align-items:center;gap:4px;transform:translate(-50%,-50%)}
+.znc{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid;font-family:monospace}
+.znl{font-size:9px;font-weight:600;color:#e0f5ee;text-align:center;line-height:1.3}
+.znt{font-size:9px;font-family:monospace;text-align:center}
+.stbar{text-align:center;margin-top:4px;font-size:11px;color:#0d9488;font-family:monospace;padding-bottom:10px}
+@keyframes flsh{0%{color:#34d399}100%{color:inherit}}
+.fl{animation:flsh .5s ease}
 </style></head><body>
-<h1>&#127807; IsoClime</h1>
-<p class="sub">Live microclimate sensor data &mdash; updates every 2 s</p>
-<div class="grid">
-<div class="card"><div class="lbl">Zone 1</div><div class="val" id="z1">&mdash;</div><div class="unit">&deg;C</div></div>
-<div class="card"><div class="lbl">Zone 2</div><div class="val" id="z2">&mdash;</div><div class="unit">&deg;C</div></div>
-<div class="card"><div class="lbl">Zone 3</div><div class="val" id="z3">&mdash;</div><div class="unit">&deg;C</div></div>
-<div class="card"><div class="lbl">Control Temp</div><div class="val" id="ct">&mdash;</div><div class="unit">&deg;C</div></div>
-<div class="card"><div class="lbl">Humidity</div><div class="val" id="ch">&mdash;</div><div class="unit">%</div></div>
+<header>
+ <div class="logo">
+  <div class="logo-icon">
+   <svg width="22" height="22" viewBox="0 0 26 26" fill="none">
+    <path d="M13 3C13 3 4 8.5 4 15.5C4 20.19 8.03 24 13 24C17.97 24 22 20.19 22 15.5C22 8.5 13 3 13 3Z" fill="#34d399" opacity=".9"/>
+    <path d="M13 24V12" stroke="#064e3b" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M13 17C13 17 9 14 7 11" stroke="#064e3b" stroke-width="1.4" stroke-linecap="round" opacity=".7"/>
+   </svg>
+  </div>
+  <div>
+   <div class="logo-name">IsoClime</div>
+   <div class="logo-sub">Live Microclimate Sensor Network</div>
+  </div>
+ </div>
+ <div style="display:flex;align-items:center;gap:12px">
+  <div class="lbadge"><span class="dot"></span><span class="btxt">LIVE</span></div>
+  <span id="clk" class="clk">--:--:--</span>
+ </div>
+</header>
+<div class="wrap">
+ <!-- Zone cards -->
+ <div class="zrow">
+  <div class="card zc">
+   <div class="zlbl">Zone 1</div><div class="zname">Urban Road</div>
+   <div class="ztmp"><span id="z1t">--</span><span class="zdeg">&deg;C</span></div>
+   <span id="z1b" class="hbadge">--</span>&nbsp;<span id="z1r" class="ztrend"></span>
+   <svg width="100%" height="34" viewBox="0 0 160 34" preserveAspectRatio="none" style="display:block;margin-top:6px">
+    <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399" stop-opacity=".3"/><stop offset="100%" stop-color="#34d399" stop-opacity="0"/></linearGradient></defs>
+    <path id="sf1" fill="url(#g1)"/><path id="sl1" stroke="#34d399" stroke-width="2" fill="none"/>
+   </svg>
+  </div>
+  <div class="card zc">
+   <div class="zlbl">Zone 2</div><div class="zname">Alum. Roof Houses</div>
+   <div class="ztmp"><span id="z2t">--</span><span class="zdeg" style="color:#14b8a6">&deg;C</span></div>
+   <span id="z2b" class="hbadge">--</span>&nbsp;<span id="z2r" class="ztrend"></span>
+   <svg width="100%" height="34" viewBox="0 0 160 34" preserveAspectRatio="none" style="display:block;margin-top:6px">
+    <defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#14b8a6" stop-opacity=".3"/><stop offset="100%" stop-color="#14b8a6" stop-opacity="0"/></linearGradient></defs>
+    <path id="sf2" fill="url(#g2)"/><path id="sl2" stroke="#14b8a6" stroke-width="2" fill="none"/>
+   </svg>
+  </div>
+  <div class="card zc">
+   <div class="zlbl">Zone 3</div><div class="zname">Tree-Covered Area</div>
+   <div class="ztmp"><span id="z3t">--</span><span class="zdeg" style="color:#06b6d4">&deg;C</span></div>
+   <span id="z3b" class="hbadge">--</span>&nbsp;<span id="z3r" class="ztrend"></span>
+   <svg width="100%" height="34" viewBox="0 0 160 34" preserveAspectRatio="none" style="display:block;margin-top:6px">
+    <defs><linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#06b6d4" stop-opacity=".3"/><stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/></linearGradient></defs>
+    <path id="sf3" fill="url(#g3)"/><path id="sl3" stroke="#06b6d4" stroke-width="2" fill="none"/>
+   </svg>
+  </div>
+  <div class="card zc">
+   <div class="zlbl">Control Sensor</div><div class="zname">DHT22 &mdash; Ambient</div>
+   <div class="crow"><span class="clabel">&#x1F321; Temperature</span><span class="cval"><span id="ctt">--</span><span style="font-size:12px;color:#34d399">&deg;C</span></span></div>
+   <div class="crow"><span class="clabel">&#x1F4A7; Humidity</span><span class="cval"><span id="cth">--</span><span style="font-size:12px;color:#14b8a6">%</span></span></div>
+   <div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+     <span style="font-size:10px;color:#0d9488">Relative Humidity</span>
+     <span id="hp" style="font-size:10px;font-family:monospace;color:#0d7377">--%</span>
+    </div>
+    <div class="hbw"><div id="hb" class="hbar" style="width:0"></div></div>
+   </div>
+  </div>
+ </div>
+ <!-- Charts row -->
+ <div class="crow2">
+  <div class="card cc">
+   <div class="cht">Temperature Over Time</div>
+   <div class="chs">All zones &mdash; rolling last 11 readings</div>
+   <div class="leg">
+    <div class="li"><div class="ld" style="background:#34d399"></div>Z1 Urban Road</div>
+    <div class="li"><div class="ld" style="background:#14b8a6"></div>Z2 Alum. Roofs</div>
+    <div class="li"><div class="ld" style="background:#06b6d4"></div>Z3 Tree Cover</div>
+   </div>
+   <svg id="lc" viewBox="0 0 520 140" preserveAspectRatio="xMidYMid meet" style="width:100%;height:140px;overflow:visible">
+    <defs>
+     <linearGradient id="la1g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399" stop-opacity=".13"/><stop offset="100%" stop-color="#34d399" stop-opacity="0"/></linearGradient>
+     <linearGradient id="la2g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#14b8a6" stop-opacity=".13"/><stop offset="100%" stop-color="#14b8a6" stop-opacity="0"/></linearGradient>
+     <linearGradient id="la3g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#06b6d4" stop-opacity=".13"/><stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/></linearGradient>
+    </defs>
+    <line x1="0" y1="10"  x2="520" y2="10"  stroke="rgba(100,220,170,.06)" stroke-width="1"/>
+    <line x1="0" y1="50"  x2="520" y2="50"  stroke="rgba(100,220,170,.06)" stroke-width="1"/>
+    <line x1="0" y1="90"  x2="520" y2="90"  stroke="rgba(100,220,170,.06)" stroke-width="1"/>
+    <line x1="0" y1="130" x2="520" y2="130" stroke="rgba(100,220,170,.06)" stroke-width="1"/>
+    <text x="-3" y="14"  fill="#0d7377" font-size="9" text-anchor="end" font-family="monospace">34&#176;</text>
+    <text x="-3" y="54"  fill="#0d7377" font-size="9" text-anchor="end" font-family="monospace">31&#176;</text>
+    <text x="-3" y="94"  fill="#0d7377" font-size="9" text-anchor="end" font-family="monospace">28&#176;</text>
+    <text x="-3" y="134" fill="#0d7377" font-size="9" text-anchor="end" font-family="monospace">25&#176;</text>
+    <path id="la1" fill="url(#la1g)"/><path id="la2" fill="url(#la2g)"/><path id="la3" fill="url(#la3g)"/>
+    <path id="ll1" stroke="#34d399" stroke-width="2.2" fill="none"/>
+    <path id="ll2" stroke="#14b8a6" stroke-width="2.2" fill="none"/>
+    <path id="ll3" stroke="#06b6d4" stroke-width="2.2" fill="none"/>
+    <circle id="ld1" cx="520" cy="70" r="4" fill="#34d399"/>
+    <circle id="ld2" cx="520" cy="70" r="4" fill="#14b8a6"/>
+    <circle id="ld3" cx="520" cy="70" r="4" fill="#06b6d4"/>
+   </svg>
+  </div>
+  <div class="card cc">
+   <div class="cht">Humidity Gauge</div>
+   <div class="chs">Ambient &mdash; DHT22</div>
+   <div style="display:flex;flex-direction:column;align-items:center">
+    <svg width="138" height="138" viewBox="0 0 150 150">
+     <defs><linearGradient id="gg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#14b8a6"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient></defs>
+     <circle cx="75" cy="75" r="58" fill="none" stroke="rgba(100,220,170,.12)" stroke-width="12" stroke-dasharray="290 365" stroke-dashoffset="-37" stroke-linecap="round" transform="rotate(90 75 75)"/>
+     <circle id="gf" cx="75" cy="75" r="58" fill="none" stroke="url(#gg)" stroke-width="12" stroke-dasharray="0 365" stroke-dashoffset="-37" stroke-linecap="round" transform="rotate(90 75 75)" style="transition:stroke-dasharray 1s ease;filter:drop-shadow(0 0 5px #14b8a6)"/>
+     <text id="gv" x="75" y="68" text-anchor="middle" fill="#0f2f28" font-size="26" font-weight="700" font-family="monospace">--</text>
+     <text x="75" y="85" text-anchor="middle" fill="#0d9488" font-size="11" font-family="sans-serif">%RH</text>
+     <text x="75" y="104" text-anchor="middle" fill="#0d7377" font-size="8" font-family="sans-serif">RELATIVE HUMIDITY</text>
+    </svg>
+    <div style="display:flex;justify-content:space-between;width:138px;margin-top:2px">
+     <span style="font-size:9px;color:#0d7377;font-family:monospace;opacity:.5">0%</span>
+     <span style="font-size:9px;color:#0d7377;font-family:monospace;opacity:.5">100%</span>
+    </div>
+    <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;width:138px">
+     <span style="font-size:10px;color:#047857">Comfort:</span>
+     <span id="cmf" style="font-size:10px;font-family:monospace;font-weight:700;color:#fbbf24">--</span>
+    </div>
+   </div>
+  </div>
+  <div class="card cc">
+   <div class="cht">Zone Comparison</div>
+   <div class="chs">Current temperature by zone</div>
+   <div style="display:flex;align-items:flex-end;justify-content:space-around;height:106px;gap:8px;margin-bottom:10px">
+    <div style="display:flex;flex-direction:column;align-items:center;flex:1">
+     <span id="bv1" style="font-size:11px;font-weight:700;font-family:monospace;margin-bottom:5px">--&#176;</span>
+     <div style="width:100%;height:76px;display:flex;align-items:flex-end">
+      <div id="b1" style="width:100%;height:50%;background:linear-gradient(180deg,#34d399,rgba(52,211,153,.3));border-radius:5px 5px 2px 2px;transition:height .8s ease;box-shadow:0 0 8px rgba(52,211,153,.25)"></div>
+     </div>
+     <span style="font-size:9px;color:#0d7377;text-align:center;margin-top:6px">Urban<br>Road</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;flex:1">
+     <span id="bv2" style="font-size:11px;font-weight:700;font-family:monospace;margin-bottom:5px">--&#176;</span>
+     <div style="width:100%;height:76px;display:flex;align-items:flex-end">
+      <div id="b2" style="width:100%;height:50%;background:linear-gradient(180deg,#14b8a6,rgba(20,184,166,.3));border-radius:5px 5px 2px 2px;transition:height .8s ease;box-shadow:0 0 8px rgba(20,184,166,.25)"></div>
+     </div>
+     <span style="font-size:9px;color:#0d7377;text-align:center;margin-top:6px">Alum.<br>Roofs</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;flex:1">
+     <span id="bv3" style="font-size:11px;font-weight:700;font-family:monospace;margin-bottom:5px">--&#176;</span>
+     <div style="width:100%;height:76px;display:flex;align-items:flex-end">
+      <div id="b3" style="width:100%;height:50%;background:linear-gradient(180deg,#06b6d4,rgba(6,182,212,.3));border-radius:5px 5px 2px 2px;transition:height .8s ease;box-shadow:0 0 8px rgba(6,182,212,.25)"></div>
+     </div>
+     <span style="font-size:9px;color:#0d7377;text-align:center;margin-top:6px">Tree<br>Cover</span>
+    </div>
+   </div>
+   <div style="display:flex;flex-direction:column;gap:4px;font-size:10px;color:#0d7377">
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:#ef4444;box-shadow:0 0 5px #ef4444"></div><span id="hi2">--</span></div>
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:#f59e0b;box-shadow:0 0 5px #f59e0b"></div><span id="hi1">--</span></div>
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 5px #34d399"></div><span>Cool &mdash; Tree Cover (baseline)</span></div>
+   </div>
+  </div>
+ </div>
+ <!-- Zone map -->
+ <div class="card mapc">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+   <div>
+    <div class="cht">Sensor Network Map</div>
+    <div class="chs">Spatial distribution of monitoring zones</div>
+   </div>
+   <div style="font-size:10px;font-family:monospace;color:#047857;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:99px;padding:4px 10px">3 Nodes Active</div>
+  </div>
+  <div class="mapinner">
+   <svg width="100%" height="100%" style="position:absolute;inset:0" preserveAspectRatio="xMidYMid meet">
+    <defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(52,211,153,.05)" stroke-width="1"/></pattern></defs>
+    <rect width="100%" height="100%" fill="url(#grid)"/>
+    <line x1="22%" y1="52%" x2="54%" y2="60%" stroke="rgba(52,211,153,.2)" stroke-width="1" stroke-dasharray="4,3"/>
+    <line x1="54%" y1="60%" x2="79%" y2="44%" stroke="rgba(52,211,153,.2)" stroke-width="1" stroke-dasharray="4,3"/>
+   </svg>
+   <div class="znode" style="left:22%;top:52%">
+    <div class="znc" style="background:rgba(52,211,153,.1);border-color:#34d399;color:#34d399">Z1</div>
+    <div class="znl">Urban Road</div><div id="mz1" class="znt" style="color:#34d399">--&#176;C</div>
+   </div>
+   <div class="znode" style="left:54%;top:60%">
+    <div class="znc" style="background:rgba(239,68,68,.1);border-color:#f87171;color:#f87171">Z2</div>
+    <div class="znl">Alum. Roofs</div><div id="mz2" class="znt" style="color:#f87171">--&#176;C</div>
+   </div>
+   <div class="znode" style="left:79%;top:44%">
+    <div class="znc" style="background:rgba(6,182,212,.1);border-color:#06b6d4;color:#06b6d4">Z3</div>
+    <div class="znl">Tree Cover</div><div id="mz3" class="znt" style="color:#06b6d4">--&#176;C</div>
+   </div>
+   <div style="position:absolute;bottom:10px;right:12px;opacity:.3;font-size:9px;color:#6ee7b7;font-family:monospace;text-align:center">N<br><span style="font-size:14px">&#8853;</span></div>
+   <div style="position:absolute;bottom:12px;left:12px;display:flex;align-items:center;gap:4px;opacity:.35">
+    <div style="width:22px;height:2px;background:#34d399;border-radius:1px"></div>
+    <span style="font-size:8px;color:#6ee7b7;font-family:monospace">50m</span>
+   </div>
+  </div>
+ </div>
+ <div id="st" class="stbar">Connecting&hellip;</div>
 </div>
-<p class="st" id="st"><span class="dot"></span>Connecting&hellip;</p>
 <script>
+var HIST=11,CW=520,CH=140,CBL=140;
+var hist={z1:[],z2:[],z3:[]};
+function tY(t){var mn=24,mx=36,c=Math.max(mn,Math.min(mx,t));return(CH-10-((c-mn)/(mx-mn))*(CH-20)).toFixed(1);}
+function mkLine(pts){
+  if(pts.length<2)return '';
+  var s=CW/(pts.length-1);
+  return pts.map(function(v,i){return(i===0?'M':'L')+(i*s).toFixed(1)+','+tY(v);}).join(' ');
+}
+function mkArea(pts){
+  var ln=mkLine(pts);if(!ln)return '';
+  var lx=((pts.length-1)*(CW/(pts.length-1))).toFixed(1);
+  return ln+' L'+lx+','+CBL+' L0,'+CBL+'Z';
+}
+function mkSpark(h){
+  var sw=160,sh=34,n=h.length;if(n<2)return{l:'',f:''};
+  var s=sw/(n-1);
+  var mn=h[0],mx=h[0];
+  for(var i=1;i<n;i++){if(h[i]<mn)mn=h[i];if(h[i]>mx)mx=h[i];}
+  var rng=mx-mn||1;
+  function yOf(v){return((1-(v-mn)/rng)*(sh-8)+4).toFixed(1);}
+  var pts=h.map(function(v,i){return[(i*s).toFixed(1),yOf(v)];});
+  var l=pts.map(function(p,i){return(i===0?'M':'L')+p[0]+','+p[1];}).join(' ');
+  var f=l+' L'+pts[n-1][0]+','+sh+' L0,'+sh+'Z';
+  return{l:l,f:f};
+}
+function mkBadge(t,base){
+  var d=t-base;
+  if(d<-0.5)return{lbl:'COOL',    bg:'rgba(52,211,153,.12)', col:'#059669',bdr:'rgba(52,211,153,.25)'};
+  if(d< 0.5)return{lbl:'NORMAL',  bg:'rgba(52,211,153,.08)', col:'#0d9488',bdr:'rgba(52,211,153,.2)'};
+  if(d<   2)return{lbl:'WARM',    bg:'rgba(245,158,11,.12)', col:'#d97706',bdr:'rgba(245,158,11,.3)'};
+  if(d<   4)return{lbl:'HIGH',    bg:'rgba(239,68,68,.12)',  col:'#dc2626',bdr:'rgba(239,68,68,.25)'};
+  return           {lbl:'ELEVATED',bg:'rgba(239,68,68,.18)', col:'#f87171',bdr:'rgba(239,68,68,.3)'};
+}
+function mkTrend(h){
+  if(h.length<2)return '';
+  var r=h[h.length-1]-h[h.length-2];
+  return(r>0?'▲':'▼')+' '+(r>=0?'+':'')+r.toFixed(1)+'°C/rd';
+}
+function setTxt(id,v){
+  var el=document.getElementById(id);if(!el)return;
+  el.textContent=v;el.className='';void el.offsetWidth;el.className='fl';
+}
+function applyData(d){
+  var z3t=typeof d.z3!=='undefined'?d.z3:26.1;
+  var zones=[
+    {t:typeof d.z1!=='undefined'?d.z1:29.4,ti:'z1t',bi:'z1b',ri:'z1r',hk:'z1',sl:'sl1',sf:'sf1'},
+    {t:typeof d.z2!=='undefined'?d.z2:31.8,ti:'z2t',bi:'z2b',ri:'z2r',hk:'z2',sl:'sl2',sf:'sf2'},
+    {t:z3t,                                 ti:'z3t',bi:'z3b',ri:'z3r',hk:'z3',sl:'sl3',sf:'sf3'}
+  ];
+  zones.forEach(function(z){
+    hist[z.hk].push(z.t);
+    if(hist[z.hk].length>HIST)hist[z.hk].shift();
+    setTxt(z.ti,z.t.toFixed(1));
+    var b=mkBadge(z.t,z3t);
+    var bel=document.getElementById(z.bi);
+    if(bel){bel.textContent=b.lbl;bel.style.background=b.bg;bel.style.color=b.col;bel.style.border='1px solid '+b.bdr;}
+    var rel=document.getElementById(z.ri);if(rel)rel.textContent=mkTrend(hist[z.hk]);
+    var sp=mkSpark(hist[z.hk]);
+    var sle=document.getElementById(z.sl),sfe=document.getElementById(z.sf);
+    if(sle)sle.setAttribute('d',sp.l);if(sfe)sfe.setAttribute('d',sp.f);
+  });
+  var ct=typeof d.ctrl_temp!=='undefined'?d.ctrl_temp:28.7;
+  var ch=typeof d.ctrl_hum!=='undefined'?d.ctrl_hum:76;
+  setTxt('ctt',ct.toFixed(1));setTxt('cth',String(Math.round(ch)));
+  var hpEl=document.getElementById('hp');if(hpEl)hpEl.textContent=Math.round(ch)+'%';
+  var hbEl=document.getElementById('hb');if(hbEl)hbEl.style.width=Math.min(100,ch).toFixed(1)+'%';
+  var gfEl=document.getElementById('gf'),gvEl=document.getElementById('gv');
+  if(gfEl)gfEl.setAttribute('stroke-dasharray',(290*(ch/100)).toFixed(1)+' 365');
+  if(gvEl)gvEl.textContent=String(Math.round(ch));
+  var cmfEl=document.getElementById('cmf');
+  if(cmfEl){
+    if(ch<40)cmfEl.textContent='DRY';
+    else if(ch<60)cmfEl.textContent='COMFORT';
+    else if(ch<75)cmfEl.textContent='HUMID';
+    else cmfEl.textContent='VERY HUMID';
+  }
+  var z1t=typeof d.z1!=='undefined'?d.z1:29.4,z2t=typeof d.z2!=='undefined'?d.z2:31.8;
+  var mx=Math.max(z1t,z2t,z3t,30),mn=Math.min(z1t,z2t,z3t,24);
+  function bp(v){return Math.max(15,Math.round(((v-mn)/(mx-mn||1))*75+15));}
+  var b1=document.getElementById('b1'),b2=document.getElementById('b2'),b3=document.getElementById('b3');
+  if(b1)b1.style.height=bp(z1t)+'%';if(b2)b2.style.height=bp(z2t)+'%';if(b3)b3.style.height=bp(z3t)+'%';
+  setTxt('bv1',z1t.toFixed(1)+'°');setTxt('bv2',z2t.toFixed(1)+'°');setTxt('bv3',z3t.toFixed(1)+'°');
+  var hi1El=document.getElementById('hi1'),hi2El=document.getElementById('hi2');
+  if(hi2El)hi2El.textContent='Elevated — Alum. Roofs (+'+(z2t-z3t).toFixed(1)+'°C)';
+  if(hi1El)hi1El.textContent='Warm — Urban Road (+'+(z1t-z3t).toFixed(1)+'°C)';
+  var mps=[['mz1',z1t],['mz2',z2t],['mz3',z3t]];
+  mps.forEach(function(p){var el=document.getElementById(p[0]);if(el)el.textContent=p[1].toFixed(1)+'°C';});
+  ['z1','z2','z3'].forEach(function(k,i){
+    var h=hist[k];if(h.length<2)return;
+    var n=i+1;
+    var ll=document.getElementById('ll'+n),la=document.getElementById('la'+n),ld=document.getElementById('ld'+n);
+    if(ll)ll.setAttribute('d',mkLine(h));
+    if(la)la.setAttribute('d',mkArea(h));
+    if(ld){ld.setAttribute('cx','520');ld.setAttribute('cy',tY(h[h.length-1]));}
+  });
+  var stEl=document.getElementById('st');
+  if(stEl){
+    var n=new Date();
+    var ts=[n.getHours(),n.getMinutes(),n.getSeconds()].map(function(v){return String(v).padStart(2,'0');}).join(':');
+    stEl.innerHTML='<span style="color:#16a34a">&#9679;</span> Live &mdash; '+ts;
+  }
+}
+function tick(){
+  var n=new Date(),el=document.getElementById('clk');
+  if(el)el.textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(function(v){return String(v).padStart(2,'0');}).join(':');
+}
+tick();setInterval(tick,1000);
 function upd(){
-  fetch('/data').then(function(r){return r.json();}).then(function(d){
-    document.getElementById('z1').textContent=d.z1.toFixed(1);
-    document.getElementById('z2').textContent=d.z2.toFixed(1);
-    document.getElementById('z3').textContent=d.z3.toFixed(1);
-    document.getElementById('ct').textContent=d.ctrl_temp.toFixed(1);
-    document.getElementById('ch').textContent=Math.round(d.ctrl_hum);
-    document.getElementById('st').innerHTML='<span class="dot"></span>Live &mdash; '+new Date().toLocaleTimeString();
-  }).catch(function(){
-    document.getElementById('st').innerHTML='<span style="color:#dc2626">&#9888; Connection lost &mdash; retrying&hellip;</span>';
+  fetch('/data').then(function(r){return r.json();}).then(applyData).catch(function(){
+    var el=document.getElementById('st');
+    if(el)el.innerHTML='<span style="color:#dc2626">&#9888; Connection lost &mdash; retrying&hellip;</span>';
   });
 }
 upd();setInterval(upd,2000);
