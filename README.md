@@ -157,7 +157,7 @@ Open **Sketch → Library Manager** (or **Sketch → Manage Libraries…**) and 
 
 | Library | Author | Notes |
 |---|---|---|
-| **ESP Async WebServer** | Me-No-Dev | Installs AsyncTCP automatically |
+| **ESP Async WebServer** | mathieucarbou | ⚠️ Use this maintained fork — the old Me-No-Dev version breaks with ESP32 core ≥ 3.x. Also install **AsyncTCP** by mathieucarbou. |
 | **DHT sensor library** | Adafruit | |
 | **Adafruit Unified Sensor** | Adafruit | Required by the DHT library |
 | **OneWire** | Jim Studt / Paul Stoffregen | Skip if using SINGLE_SENSOR_MODE |

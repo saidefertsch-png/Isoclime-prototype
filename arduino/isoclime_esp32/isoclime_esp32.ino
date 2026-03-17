@@ -24,7 +24,7 @@
  *   dashboard still shows distinct values while you source more sensors.
  *
  * ── Required libraries (Sketch → Manage Libraries) ───────────────────────
- *   • ESP Async WebServer  by Me-No-Dev   (also installs AsyncTCP)
+ *   • ESP Async WebServer  by mathieucarbou   (maintained fork — also install AsyncTCP by mathieucarbou)
  *   • DHT sensor library   by Adafruit
  *   • Adafruit Unified Sensor  by Adafruit  (DHT dependency)
  *   • OneWire              by Jim Studt / Paul Stoffregen
