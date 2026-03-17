@@ -46,13 +46,13 @@
 // ── WiFi credentials ──────────────────────────────────────────────────────────
 //
 //  SCHOOL_WIFI  0 = use HOME WiFi credentials (default — use at home)
-//  SCHOOL_WIFI  1 = use SCHOOL WiFi credentials
+//  SCHOOL_WIFI  1 = use SCHOOL WiFi credentials + static IP 11.0.8.106
 //
 //  ★ HOW TO SWITCH WHEN YOU GET TO SCHOOL:
 //    Step 1 — Change  #define SCHOOL_WIFI  0  →  #define SCHOOL_WIFI  1  (below)
-//    Step 2 — Fill in your school's WiFi name + password in the SCHOOL section.
+//    Step 2 — Fill in your school's WiFi name + password in secrets.h (SCHOOL block).
 //    Step 3 — Plug the ESP32 into a computer and click Upload in Arduino IDE.
-//    Step 4 — Open Serial Monitor (115200 baud) to see the new IP address.
+//    Step 4 — Dashboard is at  http://11.0.8.106/  (fixed — never changes at school)
 //
 #define SCHOOL_WIFI  0
 
@@ -252,6 +252,10 @@ void setup() {
 
   // Connect to WiFi ──────────────────────────────────────────────────────────
   WiFi.mode(WIFI_STA);
+#ifdef WIFI_STATIC_IP
+  // School network: assign a fixed IP so the dashboard URL never changes.
+  WiFi.config(WIFI_LOCAL_IP, WIFI_GATEWAY, WIFI_SUBNET, WIFI_DNS1, WIFI_DNS2);
+#endif
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   Serial.print("[WiFi] Connecting");
   while (WiFi.status() != WL_CONNECTED) {

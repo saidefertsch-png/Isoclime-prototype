@@ -175,16 +175,17 @@ Open **Sketch → Library Manager** (or **Sketch → Manage Libraries…**) and 
 
 ### Step 3 — Configure the sketch
 
-**WiFi credentials (choose one method):**
+**WiFi credentials (recommended method):**
 
-- **Recommended:** Copy `arduino/isoclime_esp32/secrets.h.example` to `arduino/isoclime_esp32/secrets.h` and fill in your network name and password. The `secrets.h` file is listed in `.gitignore` so it will never be accidentally committed to GitHub.
-  ```cpp
-  // secrets.h
-  const char* WIFI_SSID = "MyHomeNetwork";
-  const char* WIFI_PASS = "MyPassword123";
-  ```
+Copy `arduino/isoclime_esp32/secrets.h.example` → `arduino/isoclime_esp32/secrets.h` and fill in your network names and passwords. The `secrets.h` file is listed in `.gitignore` so it will never be accidentally committed to GitHub.
 
-- **Quick start:** Open `isoclime_esp32.ino` and edit the two placeholder lines directly — but do **not** commit real credentials to a public repo.
+The example file has two blocks — home and school. Fill in both once, then just flip the toggle in the main sketch:
+
+```cpp
+#define SCHOOL_WIFI  0   // 0 = home (DHCP),  1 = school (static IP 11.0.8.106)
+```
+
+When `SCHOOL_WIFI 1` is set, the ESP32 uses the fixed IP **11.0.8.106** — the dashboard URL at school is always `http://11.0.8.106/`, no need to look it up.
 
 If you only have one DHT22 for now, also change:
 
@@ -198,11 +199,9 @@ If you only have one DHT22 for now, also change:
 2. **Tools → Port** → select the COM / `/dev/tty…` port that appeared.
 3. Click **Upload** (the → arrow button).
 4. Once uploaded, open **Tools → Serial Monitor** at **115 200 baud**.
-5. You will see the ESP32's IP address printed, e.g.:
-   ```
-   [WiFi] Connected!  IP address: 192.168.1.42
-   ```
-   **Write this IP down** — you will need it in the dashboard.
+5. You will see the IP address printed:
+   - **At home:** dynamic address, e.g. `[WiFi] Connected!  IP address: 192.168.1.42`
+   - **At school:** always `[WiFi] Connected!  IP address: 11.0.8.106`
 
 ---
 
